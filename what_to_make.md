@@ -1,4 +1,4 @@
-# 🧩 What To Do — Universal AI Business Support Agent (v2)
+# 🧩 What To Do — Universal AI Business Support Agent
 
 ## 🎯 Goal
 
