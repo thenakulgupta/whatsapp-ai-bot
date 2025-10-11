@@ -106,7 +106,7 @@ jobs:
           sudo mkdir -p /var/www/whatsapp-ai-bot
           sudo cp -r . /var/www/whatsapp-ai-bot
           sudo chown ubuntu:ubuntu -R /var/www/whatsapp-ai-bot
-          pm2 start /var/www/whatsapp-ai-bot/ecosystem-dev.config.cjs || pm2 restart whatsapp-ai-bot-backend
+          pm2 start /var/www/whatsapp-ai-bot/ecosystem.config.cjs || pm2 restart whatsapp-ai-bot-backend
           pm2 save
           sudo rm -rf ~/whatsapp-ai-bot
           ENDSSH
