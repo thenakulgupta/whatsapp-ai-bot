@@ -12,12 +12,12 @@ export default defineConfig({
     port: process.env.VITE_FRONTEND_PORT || 3000,
     proxy: {
       "/api": {
-        target: `http://localhost:${process.env.VITE_BACKEND_PORT}`,
+        target: process.env.VITE_BACKEND_URL,
         changeOrigin: true,
         secure: false,
       },
       "/socket.io": {
-        target: `http://localhost:${process.env.VITE_BACKEND_PORT}`,
+        target: process.env.VITE_BACKEND_URL,
         changeOrigin: true,
         ws: true,
       },
