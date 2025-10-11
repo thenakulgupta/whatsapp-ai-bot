@@ -26,14 +26,48 @@ const app = express();
 const server = createServer(app);
 const io = new Server(server, {
   cors: {
-    origin:
-      process.env.DASHBOARD_URL ||
-      `http://localhost:${process.env.FRONTEND_PORT}`,
+    origin: (origin, callback) => {
+      // Allow requests with no origin (like mobile apps or curl requests)
+      if (!origin) return callback(null, true);
+
+      const allowedOrigins = [
+        process.env.DASHBOARD_URL,
+        `http://localhost:${process.env.FRONTEND_PORT}`,
+        `https://localhost:${process.env.FRONTEND_PORT}`,
+        // Add your production domain here
+        process.env.DASHBOARD_URL,
+      ].filter(Boolean);
+
+      if (allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        logger.warn(`CORS blocked origin: ${origin}`);
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
     methods: ["GET", "POST"],
+    credentials: true,
   },
+  // Enable HTTPS support for WebSocket
+  transports: ["websocket", "polling"],
+  allowEIO3: true,
 });
 
 const PORT = process.env.BACKEND_PORT || 3000;
+
+// Trust proxy configuration for reverse proxy setups (nginx, load balancers, etc.)
+// This is essential for accurate IP detection with express-rate-limit
+if (
+  process.env.NODE_ENV === "production" ||
+  process.env.TRUST_PROXY === "true"
+) {
+  app.set("trust proxy", true);
+  logger.info("Trust proxy enabled for production environment");
+} else if (process.env.TRUST_PROXY) {
+  // Allow custom trust proxy configuration
+  app.set("trust proxy", process.env.TRUST_PROXY);
+  logger.info(`Trust proxy configured: ${process.env.TRUST_PROXY}`);
+}
 
 // Security middleware
 app.use(helmet());
@@ -46,11 +80,19 @@ app.use(
   })
 );
 
-// Rate limiting
+// Rate limiting with proper proxy support
 const limiter = rateLimit({
   windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000, // 15 minutes
   max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS) || 100,
   message: "Too many requests from this IP, please try again later.",
+  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+  // Trust proxy is already configured above, so this will work correctly
+  trustProxy: true,
+  // Skip successful requests from rate limiting (optional)
+  skipSuccessfulRequests: false,
+  // Skip failed requests from rate limiting (optional)
+  skipFailedRequests: false,
 });
 app.use("/api/", limiter);
 

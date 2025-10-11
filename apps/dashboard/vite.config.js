@@ -20,6 +20,16 @@ export default defineConfig({
         target: process.env.VITE_BACKEND_URL,
         changeOrigin: true,
         ws: true,
+        secure: false,
+        // Handle WebSocket upgrade properly
+        configure: (proxy, options) => {
+          proxy.on("error", (err, req, res) => {
+            console.log("WebSocket proxy error:", err);
+          });
+          proxy.on("proxyReqWs", (proxyReq, req, socket) => {
+            console.log("WebSocket proxy request:", req.url);
+          });
+        },
       },
     },
   },

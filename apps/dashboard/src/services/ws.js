@@ -19,14 +19,40 @@ class WebSocketService {
       return this.socket;
     }
 
-    this.socket = io("/", {
+    // Determine the WebSocket URL based on environment
+    const wsUrl = this.getWebSocketUrl();
+
+    this.socket = io(wsUrl, {
       transports: ["websocket", "polling"],
       timeout: 20000,
       forceNew: true,
+      // Enable secure connections for HTTPS
+      secure: window.location.protocol === "https:",
+      // Auto-upgrade to secure WebSocket when available
+      upgrade: true,
+      // Handle connection errors gracefully
+      reconnection: true,
+      reconnectionAttempts: 5,
+      reconnectionDelay: 1000,
     });
 
     this.setupEventListeners();
     return this.socket;
+  }
+
+  /**
+   * Get WebSocket URL based on environment
+   */
+  getWebSocketUrl() {
+    // In production with HTTPS, use the same origin
+    if (window.location.protocol === "https:") {
+      return window.location.origin;
+    }
+
+    // In development or HTTP, use the configured backend URL
+    const backendUrl =
+      import.meta.env.VITE_BACKEND_URL || "http://localhost:3001";
+    return backendUrl;
   }
 
   /**
