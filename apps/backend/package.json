@@ -1,5 +1,5 @@
 {
-  "name": "universal-ai-backend",
+  "name": "whatsapp-ai-bot-backend",
   "version": "1.0.0",
   "description": "Backend API for Universal AI Business Support Agent",
   "main": "src/index.js",

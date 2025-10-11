@@ -7,8 +7,8 @@ const config = {
   mongodb: {
     uri:
       process.env.MONGODB_URI ||
-      "mongodb://localhost:27017/universal-ai-support",
-    dbName: process.env.MONGODB_DATABASE || "universal-ai-support",
+      "mongodb://localhost:27017/whatsapp-ai-bot-support",
+    dbName: process.env.MONGODB_DATABASE || "whatsapp-ai-bot-support",
   },
 
   // WhatsApp Business API
