@@ -31,18 +31,19 @@ router.post("/login", async (req, res) => {
       username === process.env.ADMIN_USERNAME &&
       password === process.env.ADMIN_PASSWORD
     ) {
+      // Find the admin agent in the database
+      const adminAgent = await Agent.findOne({ role: "admin", isActive: true });
+      if (!adminAgent) {
+        return res.status(500).json({ error: "Admin agent not found" });
+      }
+
       const token = require("../middleware/auth").generateToken(
-        "admin",
+        adminAgent._id,
         "admin"
       );
       return res.json({
         token,
-        agent: {
-          _id: "admin",
-          name: "System Administrator",
-          email: username,
-          role: "admin",
-        },
+        agent: adminAgent.toPublicJSON(),
       });
     }
 
