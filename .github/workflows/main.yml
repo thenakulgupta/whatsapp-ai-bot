@@ -32,6 +32,12 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: "18"
+          cache: "npm"
+
       - name: make .env
         run: |
           echo "MONGODB_URI=${{secrets.MONGODB_URI}}" >> .env
@@ -57,9 +63,12 @@ jobs:
           echo "LOG_FILE=${{env.LOG_FILE}}" >> .env
           echo "GROQ_MODEL=${{env.GROQ_MODEL}}" >> .env
 
-      - name: Install dependencies
+      - name: Install dependencies and build
         run: |
-          npm run install:all
+          npm install
+          cd apps/backend && npm install
+          cd ../dashboard && npm install
+          cd ../../
           npm run build:dashboard
           cd apps
           mkdir dashboard_backup
