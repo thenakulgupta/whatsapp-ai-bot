@@ -1,0 +1,112 @@
+name: Deploy to EC2
+
+on:
+  push:
+    branches:
+      - main
+
+env:
+  EC2_HOST: 13.204.41.230
+  EC2_USERNAME: ubuntu
+  MONGODB_DATABASE: whatsapp_ai_bot
+  WHATSAPP_PHONE_NUMBER_ID: 113238344966155
+  WHATSAPP_BUSINESS_ACCOUNT_ID: 114439314846048
+  FRONTEND_PORT: 3000
+  VITE_FRONTEND_PORT: 3000
+  DASHBOARD_URL: http://localhost:3000
+  BACKEND_PORT: 3001
+  VITE_BACKEND_PORT: 3001
+  VITE_BACKEND_URL: http://localhost:3001
+  NODE_ENV: development
+  ADMIN_USERNAME: admin
+  ADMIN_PASSWORD: admin123
+  SESSION_EXPIRY_HOURS: 24
+  MAX_SESSION_CONTEXT_SIZE: 1000
+  RATE_LIMIT_WINDOW_MS: 900000
+  RATE_LIMIT_MAX_REQUESTS: 10000
+  LOG_LEVEL: info
+  LOG_FILE: logs/app.log
+  GROQ_MODEL: llama-3.1-8b-instant
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: make .env
+        run: |
+          echo "MONGODB_URI=${{secrets.MONGODB_URI}}" >> .env
+          echo "MONGODB_DATABASE=${{env.MONGODB_DATABASE}}" >> .env
+          echo "WHATSAPP_ACCESS_TOKEN=${{secrets.WHATSAPP_ACCESS_TOKEN}}" >> .env
+          echo "WHATSAPP_PHONE_NUMBER_ID=${{env.WHATSAPP_PHONE_NUMBER_ID}}" >> .env
+          echo "WHATSAPP_WEBHOOK_VERIFY_TOKEN=${{secrets.WHATSAPP_WEBHOOK_VERIFY_TOKEN}}" >> .env
+          echo "WHATSAPP_BUSINESS_ACCOUNT_ID=${{env.WHATSAPP_BUSINESS_ACCOUNT_ID}}" >> .env
+          echo "GROQ_API_KEY=${{secrets.GROQ_API_KEY}}" >> .env
+          echo "GOOGLE_TRANSLATE_API_KEY=${{secrets.GOOGLE_TRANSLATE_API_KEY}}" >> .env
+          echo "FRONTEND_PORT=${{env.FRONTEND_PORT}}" >> .env
+          echo "VITE_FRONTEND_PORT=${{env.VITE_FRONTEND_PORT}}" >> .env
+          echo "DASHBOARD_URL=${{env.DASHBOARD_URL}}" >> .env
+          echo "BACKEND_PORT=${{env.BACKEND_PORT}}" >> .env
+          echo "VITE_BACKEND_PORT=${{env.VITE_BACKEND_PORT}}" >> .env
+          echo "VITE_BACKEND_URL=${{env.VITE_BACKEND_URL}}" >> .env
+          echo "NODE_ENV=${{env.NODE_ENV}}" >> .env
+          echo "JWT_SECRET=${{secrets.JWT_SECRET}}" >> .env
+          echo "ADMIN_USERNAME=${{env.ADMIN_USERNAME}}" >> .env
+          echo "ADMIN_PASSWORD=${{env.ADMIN_PASSWORD}}" >> .env
+          echo "SESSION_EXPIRY_HOURS=${{env.SESSION_EXPIRY_HOURS}}" >> .env
+          echo "MAX_SESSION_CONTEXT_SIZE=${{env.MAX_SESSION_CONTEXT_SIZE}}" >> .env
+          echo "RATE_LIMIT_WINDOW_MS=${{env.RATE_LIMIT_WINDOW_MS}}" >> .env
+          echo "RATE_LIMIT_MAX_REQUESTS=${{env.RATE_LIMIT_MAX_REQUESTS}}" >> .env
+          echo "LOG_LEVEL=${{env.LOG_LEVEL}}" >> .env
+          echo "LOG_FILE=${{env.LOG_FILE}}" >> .env
+          echo "GROQ_MODEL=${{env.GROQ_MODEL}}" >> .env
+
+      - name: Install dependencies
+        run: |
+          npm run install:all
+          npm run build:dashboard
+          cd apps
+          mkdir dashboard_backup
+          mv dashboard/dist dashboard_backup
+          rm -rf dashboard/*
+          mv dashboard_backup/* dashboard/
+
+      - name: Create SSH key file from GitHub secret
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{secrets.SSH_SECRET}}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+
+      - name: Zip the project
+        run: zip -r project.zip ./*
+
+      - name: Delete existing build files
+        run: |
+          ssh -i ~/.ssh/id_rsa -o "StrictHostKeyChecking=no" ${{ env.EC2_USERNAME }}@${{ env.EC2_HOST }} << 'ENDSSH'
+          cd ~/
+          sudo rm -rf whatsapp-ai-bot
+          sudo mkdir whatsapp-ai-bot
+          sudo chown ubuntu:ubuntu whatsapp-ai-bot
+          ENDSSH
+
+      - name: Copy build files to EC2 instance
+        run: sudo scp -i ~/.ssh/id_rsa  -o "StrictHostKeyChecking=no" -v -r .env project.zip ${{ env.EC2_USERNAME }}@${{ env.EC2_HOST }}:~/whatsapp-ai-bot
+
+      - name: SSH into EC2 and deploy
+        run: |
+          ssh -i ~/.ssh/id_rsa -o "StrictHostKeyChecking=no" ${{ env.EC2_USERNAME }}@${{ env.EC2_HOST }} << 'ENDSSH'
+          cd ~/whatsapp-ai-bot
+          unzip project.zip
+          rm -rf project.zip
+          pm2 delete whatsapp-ai-bot-backend
+          pm2 save
+          sudo rm -rf /var/www/whatsapp-ai-bot
+          sudo mkdir -p /var/www/whatsapp-ai-bot
+          sudo cp -r . /var/www/whatsapp-ai-bot
+          sudo chown ubuntu:ubuntu -R /var/www/whatsapp-ai-bot
+          pm2 start /var/www/whatsapp-ai-bot/ecosystem-dev.config.cjs || pm2 restart whatsapp-ai-bot-backend
+          pm2 save
+          sudo rm -rf ~/whatsapp-ai-bot
+          ENDSSH
