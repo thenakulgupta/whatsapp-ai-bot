@@ -26,19 +26,22 @@ const app = express();
 const server = createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: process.env.DASHBOARD_URL || "http://localhost:3001",
+    origin:
+      process.env.DASHBOARD_URL ||
+      `http://localhost:${process.env.FRONTEND_PORT}`,
     methods: ["GET", "POST"],
   },
 });
 
-const PORT = process.env.PORT || 3000;
-const WS_PORT = process.env.WS_PORT || 3001;
+const PORT = process.env.BACKEND_PORT || 3000;
 
 // Security middleware
 app.use(helmet());
 app.use(
   cors({
-    origin: process.env.DASHBOARD_URL || "http://localhost:3001",
+    origin:
+      process.env.DASHBOARD_URL ||
+      `http://localhost:${process.env.FRONTEND_PORT}`,
     credentials: true,
   })
 );
@@ -110,7 +113,6 @@ async function startServer() {
     // Start server
     server.listen(PORT, () => {
       logger.info(`🚀 Server running on port ${PORT}`);
-      logger.info(`📡 WebSocket server running on port ${WS_PORT}`);
       logger.info(`🌍 Environment: ${process.env.NODE_ENV || "development"}`);
     });
   } catch (error) {

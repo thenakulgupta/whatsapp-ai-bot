@@ -34,8 +34,7 @@ const config = {
 
   // Server Configuration
   server: {
-    port: parseInt(process.env.PORT) || 3000,
-    wsPort: parseInt(process.env.WS_PORT) || 3001,
+    port: parseInt(process.env.BACKEND_PORT) || 3000,
     nodeEnv: process.env.NODE_ENV || "development",
     jwtSecret: process.env.JWT_SECRET || "your-secret-key",
   },
@@ -66,7 +65,9 @@ const config = {
 
   // Dashboard
   dashboard: {
-    url: process.env.DASHBOARD_URL || "http://localhost:3001",
+    url:
+      process.env.DASHBOARD_URL ||
+      `http://localhost:${process.env.FRONTEND_PORT}`,
   },
 };
 
