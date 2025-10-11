@@ -17,7 +17,7 @@ const config = {
     phoneNumberId: process.env.WHATSAPP_PHONE_NUMBER_ID,
     webhookVerifyToken: process.env.WHATSAPP_WEBHOOK_VERIFY_TOKEN,
     businessAccountId: process.env.WHATSAPP_BUSINESS_ACCOUNT_ID,
-    apiUrl: "https://graph.facebook.com/v18.0",
+    apiUrl: "https://graph.facebook.com/v24.0",
   },
 
   // AI Services
