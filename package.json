@@ -1,0 +1,37 @@
+{
+  "name": "universal-ai-support",
+  "version": "1.0.0",
+  "description": "Universal AI Business Support Agent for WhatsApp with modular industry demos",
+  "private": true,
+  "workspaces": [
+    "apps/*"
+  ],
+  "scripts": {
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:dashboard\"",
+    "dev:backend": "cd apps/backend && npm run dev",
+    "dev:dashboard": "cd apps/dashboard && npm run dev",
+    "build": "npm run build:backend && npm run build:dashboard",
+    "build:backend": "cd apps/backend && npm run build",
+    "build:dashboard": "cd apps/dashboard && npm run build",
+    "start": "npm run start:backend",
+    "start:backend": "cd apps/backend && npm start",
+    "install:all": "npm install && npm run install:backend && npm run install:dashboard",
+    "install:backend": "cd apps/backend && npm install",
+    "install:dashboard": "cd apps/dashboard && npm install"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  },
+  "keywords": [
+    "whatsapp",
+    "ai",
+    "chatbot",
+    "business-support",
+    "modular"
+  ],
+  "author": "Nakul Gupta",
+  "license": "MIT",
+  "dependencies": {
+    "prettier": "^3.6.2"
+  }
+}
