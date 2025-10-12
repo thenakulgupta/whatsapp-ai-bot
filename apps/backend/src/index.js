@@ -35,6 +35,8 @@ const io = new Server(server, {
         `http://localhost:${process.env.FRONTEND_PORT}`,
         `https://localhost:${process.env.FRONTEND_PORT}`,
         // Add your production domain here
+        "https://whatsapp-ai-bot.nakultelestock.com",
+        "http://whatsapp-ai-bot.nakultelestock.com",
         process.env.DASHBOARD_URL,
       ].filter(Boolean);
 
@@ -73,9 +75,12 @@ if (
 app.use(helmet());
 app.use(
   cors({
-    origin:
-      process.env.DASHBOARD_URL ||
+    origin: [
+      process.env.DASHBOARD_URL,
       `http://localhost:${process.env.FRONTEND_PORT}`,
+      "https://whatsapp-ai-bot.nakultelestock.com",
+      "http://whatsapp-ai-bot.nakultelestock.com",
+    ].filter(Boolean),
     credentials: true,
   })
 );

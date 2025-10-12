@@ -15,6 +15,7 @@ env:
   BACKEND_PORT: 3003
   VITE_BACKEND_URL: https://whatsapp-ai-bot-backend.nakultelestock.com
   NODE_ENV: development
+  CURRENT_ENV: production
   ADMIN_USERNAME: admin
   ADMIN_PASSWORD: admin123
   SESSION_EXPIRY_HOURS: 24
@@ -46,6 +47,7 @@ jobs:
           echo "BACKEND_PORT=${{env.BACKEND_PORT}}" >> .env
           echo "VITE_BACKEND_URL=${{env.VITE_BACKEND_URL}}" >> .env
           echo "NODE_ENV=${{env.NODE_ENV}}" >> .env
+          echo "CURRENT_ENV=${{env.CURRENT_ENV}}" >> .env
           echo "JWT_SECRET=${{secrets.JWT_SECRET}}" >> .env
           echo "ADMIN_USERNAME=${{env.ADMIN_USERNAME}}" >> .env
           echo "ADMIN_PASSWORD=${{env.ADMIN_PASSWORD}}" >> .env

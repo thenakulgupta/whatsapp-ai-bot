@@ -20,7 +20,7 @@ export default defineConfig({
         target: process.env.VITE_BACKEND_URL,
         changeOrigin: true,
         ws: true,
-        secure: true,
+        secure: process.env.CURRENT_ENV === "production",
         // Handle WebSocket upgrade properly
         configure: (proxy, options) => {
           proxy.on("error", (err, req, res) => {
