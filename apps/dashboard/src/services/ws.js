@@ -44,11 +44,6 @@ class WebSocketService {
    * Get WebSocket URL based on environment
    */
   getWebSocketUrl() {
-    // In production with HTTPS, use the same origin
-    if (window.location.protocol === "https:") {
-      return window.location.origin;
-    }
-
     // In development or HTTP, use the configured backend URL
     const backendUrl =
       import.meta.env.VITE_BACKEND_URL || "http://localhost:3001";
