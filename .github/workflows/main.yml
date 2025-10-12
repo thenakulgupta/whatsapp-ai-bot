@@ -14,7 +14,7 @@ env:
   DASHBOARD_URL: https://whatsapp-ai-bot.nakultelestock.com
   BACKEND_PORT: 3003
   VITE_BACKEND_URL: https://whatsapp-ai-bot-backend.nakultelestock.com
-  NODE_ENV: production
+  NODE_ENV: development
   ADMIN_USERNAME: admin
   ADMIN_PASSWORD: admin123
   SESSION_EXPIRY_HOURS: 24
