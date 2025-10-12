@@ -44,10 +44,21 @@ router.post(
   translateMessage,
   async (req, res) => {
     try {
+      // Log all incoming webhook requests for debugging
+      logger.info("Webhook POST request received", {
+        headers: req.headers,
+        body: JSON.stringify(req.body, null, 2),
+        timestamp: new Date().toISOString(),
+      });
+
       const webhookData = whatsappService.processWebhookData(req.body);
 
       if (!webhookData) {
-        logger.warn("Invalid webhook data received");
+        logger.warn("Invalid webhook data received", {
+          body: req.body,
+          entry: req.body.entry,
+          changes: req.body.entry?.[0]?.changes,
+        });
         return res.status(400).json({ error: "Invalid webhook data" });
       }
 
@@ -324,6 +335,23 @@ router.get("/health", (req, res) => {
     status: "healthy",
     timestamp: new Date().toISOString(),
     service: "whatsapp-webhook",
+  });
+});
+
+/**
+ * Test endpoint to verify webhook is accessible
+ */
+router.post("/test", (req, res) => {
+  logger.info("Test webhook endpoint called", {
+    body: req.body,
+    headers: req.headers,
+    timestamp: new Date().toISOString(),
+  });
+
+  res.status(200).json({
+    status: "test-successful",
+    timestamp: new Date().toISOString(),
+    received: req.body,
   });
 });
 
