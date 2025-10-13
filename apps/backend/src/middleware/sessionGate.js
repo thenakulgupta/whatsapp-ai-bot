@@ -1,5 +1,6 @@
 const Session = require("../db/models/Session");
 const Module = require("../db/models/Module");
+const UserModule = require("../db/models/UserModule");
 const config = require("../config/env");
 const logger = require("../config/logger");
 
@@ -28,8 +29,14 @@ class SessionManager {
 
       // If no active session, create new one
       if (!session) {
-        // If no module specified, we'll need to show module menu
-        if (!moduleId) {
+        // Check if user has an active module selection
+        const userModule = await UserModule.findActiveModule(userPhone);
+
+        if (userModule) {
+          // Use the user's selected module
+          moduleId = userModule.activeModuleId;
+        } else if (!moduleId) {
+          // No module specified and no user module selection
           return { session: null, needsModuleSelection: true };
         }
 
@@ -83,6 +90,9 @@ class SessionManager {
         throw new Error("Invalid module");
       }
 
+      // Update user's active module selection
+      await UserModule.setActiveModule(userPhone, newModuleId, 24);
+
       // Get current session
       const currentSession = await Session.findActiveSession(userPhone);
 
@@ -125,9 +135,12 @@ class SessionManager {
       if (session) {
         await session.end();
         logger.info("Session ended", { userPhone, sessionId: session._id });
-        return true;
       }
-      return false;
+
+      // Also clear the user's active module selection
+      await UserModule.clearActiveModule(userPhone);
+
+      return true;
     } catch (error) {
       logger.error("Failed to end session", {
         userPhone,
