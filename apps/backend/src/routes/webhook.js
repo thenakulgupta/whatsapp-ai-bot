@@ -39,7 +39,7 @@ router.get("/whatsapp", (req, res) => {
  */
 router.post(
   "/whatsapp",
-  sessionGate,
+  // sessionGate,
   languageDetect,
   translateMessage,
   async (req, res) => {
@@ -62,21 +62,28 @@ router.post(
         return res.status(400).json({ error: "Invalid webhook data" });
       }
 
-      const { messageId, from, message, type, contact } = webhookData;
+      const { messageId, from, text, type, contact } = webhookData;
 
       logger.info("Received WhatsApp message", {
         from,
         messageId,
         type,
-        messageLength: message?.length || 0,
+        messageLength: text?.length || 0,
       });
 
       // Mark message as read
-      await whatsappService.markAsRead(messageId);
+      try {
+        await whatsappService.markAsRead(messageId);
+      } catch (error) {
+        logger.error("Failed to mark message as read", {
+          messageId,
+          error: error.response?.data || error.message,
+        });
+      }
 
       // Handle different message types
-      if (type === "text" && message) {
-        await handleTextMessage(from, message, req, res);
+      if (type === "text" && text) {
+        await handleTextMessage(from, text, req, res);
       } else if (type === "interactive") {
         await handleInteractiveMessage(from, req.body, req, res);
       } else {

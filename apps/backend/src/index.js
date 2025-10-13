@@ -65,7 +65,7 @@ if (
 ) {
   app.set("trust proxy", true);
   logger.info("Trust proxy enabled for production environment");
-} else if (process.env.TRUST_PROXY) {
+} else if (process.env.TRUST_PROXY === "true") {
   // Allow custom trust proxy configuration
   app.set("trust proxy", process.env.TRUST_PROXY);
   logger.info(`Trust proxy configured: ${process.env.TRUST_PROXY}`);

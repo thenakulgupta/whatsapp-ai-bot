@@ -330,9 +330,17 @@ class WhatsAppService {
    */
   processWebhookData(body) {
     try {
-      const entry = body.entry?.[0];
-      const changes = entry?.changes?.[0];
-      const value = changes?.value;
+      let value;
+
+      // Handle WebSocket format (field + value structure)
+      if (body.field && body.value) {
+        value = body.value;
+      } else {
+        // Handle standard webhook format (entry + changes structure)
+        const entry = body.entry?.[0];
+        const changes = entry?.changes?.[0];
+        value = changes?.value;
+      }
 
       if (!value?.messages) {
         return null;
