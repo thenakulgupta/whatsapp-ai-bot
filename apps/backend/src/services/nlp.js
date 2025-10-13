@@ -245,7 +245,7 @@ class NLPService {
   async callGroq(options) {
     try {
       const response = await this.groq.chat.completions.create({
-        model: "llama3-8b-8192",
+        model: config.ai.groqModel,
         messages: options.messages,
         temperature: options.temperature || 0.7,
         max_tokens: options.max_tokens || 1000,

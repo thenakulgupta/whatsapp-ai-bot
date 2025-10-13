@@ -24,6 +24,7 @@ const config = {
   ai: {
     groqApiKey: process.env.GROQ_API_KEY,
     defaultProvider: process.env.AI_PROVIDER || "groq",
+    groqModel: process.env.GROQ_MODEL || "llama-3.1-8b-instant",
   },
 
   // Translation
