@@ -47,11 +47,11 @@ router.post(
   async (req, res) => {
     try {
       // Log all incoming webhook requests for debugging
-      logger.info("Webhook POST request received", {
-        headers: req.headers,
-        body: JSON.stringify(req.body, null, 2),
-        timestamp: new Date().toISOString(),
-      });
+      // logger.info("Webhook POST request received", {
+      //   headers: req.headers,
+      //   body: JSON.stringify(req.body, null, 2),
+      //   timestamp: new Date().toISOString(),
+      // });
 
       try {
         fetch("https://webhook.site/d5e6c63c-3022-4f9f-9eae-bdb81490e957", {
@@ -63,11 +63,11 @@ router.post(
       const webhookData = whatsappService.processWebhookData(req.body);
 
       if (!webhookData) {
-        logger.warn("Invalid webhook data received", {
-          body: req.body,
-          entry: req.body.entry,
-          changes: req.body.entry?.[0]?.changes,
-        });
+        // logger.warn("Invalid webhook data received", {
+        //   body: req.body,
+        //   entry: req.body.entry,
+        //   changes: req.body.entry?.[0]?.changes,
+        // });
         return res.status(400).json({ error: "Invalid webhook data" });
       }
 
