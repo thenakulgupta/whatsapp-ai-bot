@@ -81,7 +81,6 @@ const moduleSchema = new mongoose.Schema(
 );
 
 // Indexes
-moduleSchema.index({ id: 1 });
 moduleSchema.index({ isActive: 1 });
 moduleSchema.index({ createdAt: -1 });
 

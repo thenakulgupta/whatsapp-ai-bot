@@ -151,7 +151,6 @@ const agentSchema = new mongoose.Schema(
 );
 
 // Indexes
-agentSchema.index({ email: 1 });
 agentSchema.index({ role: 1, isActive: 1 });
 agentSchema.index({ assignedModules: 1, isActive: 1 });
 agentSchema.index({ isOnline: 1, isActive: 1 });
