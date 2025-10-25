@@ -12,7 +12,9 @@ const UserModule = require("./models/UserModule");
 
 const connectDB = async () => {
   try {
-    const conn = await mongoose.connect(config.mongodb.uri);
+    const conn = await mongoose.connect(
+      `${config.mongodb.uri}/${config.mongodb.dbName}`
+    );
 
     logger.info(`MongoDB Connected: ${conn.connection.host}`);
 
