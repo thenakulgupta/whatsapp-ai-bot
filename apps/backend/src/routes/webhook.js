@@ -159,6 +159,12 @@ async function handleTextMessage(from, message, req, res) {
     await chat.markAsCompleted(result.response, responseTime);
 
     if (result.functionName) {
+      logger.info("Setting function call", {
+        functionName: result.functionName,
+        parameters: result.parameters,
+        result: result.result,
+        executionTime: responseTime,
+      });
       await chat.setFunctionCall({
         name: result.functionName,
         parameters: result.parameters,
