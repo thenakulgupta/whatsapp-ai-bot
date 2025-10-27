@@ -33,6 +33,16 @@ module.exports = {
         "Find Nike running shoes",
         "Search for laptops in electronics category",
       ],
+      apiInfo: {
+        url: "https://api.ecommerce.com/search",
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: {
+          query: "string",
+        },
+      },
     },
     {
       name: "get_product_details",
@@ -46,6 +56,16 @@ module.exports = {
         "Show me details of product ABC123",
         "Tell me about iPhone 15 Pro",
       ],
+      apiInfo: {
+        url: "https://api.ecommerce.com/search",
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: {
+          query: "string",
+        },
+      },
     },
     {
       name: "track_order",
@@ -54,10 +74,6 @@ module.exports = {
         order_id: {
           type: "string",
           description: "Order ID or tracking number",
-        },
-        phone_number: {
-          type: "string",
-          description: "Phone number associated with order",
         },
       },
       required: ["order_id"],
@@ -98,7 +114,6 @@ module.exports = {
       name: "get_order_history",
       description: "Get order history for a customer",
       parameters: {
-        phone_number: { type: "string", description: "Customer phone number" },
         date_range: {
           type: "string",
           description: "Date range (last_month, last_3_months, last_year)",
@@ -108,7 +123,6 @@ module.exports = {
           description: "Order status filter (delivered, pending, cancelled)",
         },
       },
-      required: ["phone_number"],
       examples: ["Show my order history", "Get my orders from last month"],
     },
     {
@@ -131,10 +145,6 @@ module.exports = {
     {
       name: "get_cart",
       description: "View items in shopping cart",
-      parameters: {
-        phone_number: { type: "string", description: "Customer phone number" },
-      },
-      required: ["phone_number"],
       examples: ["Show my cart", "What's in my shopping cart?"],
     },
     {
