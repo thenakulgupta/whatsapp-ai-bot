@@ -35,6 +35,20 @@ module.exports = {
         "Find 3BHK houses in Bangalore with swimming pool",
         "Search for 1BHK apartments in Mumbai under 1Cr",
       ],
+      apiInfo: {
+        url: "https://whatsapp-ai-bot.nakultelestock.com/demo-data/real-estate/search-properties",
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: {
+          location: "string",
+          budget: "string",
+          property_type: "string",
+          bedrooms: "string",
+          amenities: "array",
+        },
+      },
     },
     {
       name: "get_property_details",
@@ -48,6 +62,17 @@ module.exports = {
         "Show me details of property ABC123",
         "Tell me about Green Valley Apartments",
       ],
+      apiInfo: {
+        url: "https://whatsapp-ai-bot.nakultelestock.com/demo-data/real-estate/get-property-details",
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: {
+          property_id: "string",
+          property_name: "string",
+        },
+      },
     },
     {
       name: "schedule_visit",
@@ -73,6 +98,29 @@ module.exports = {
         "Schedule a visit for property ABC123",
         "Book a virtual tour for tomorrow at 2 PM",
       ],
+      apiInfo: {
+        url: "https://whatsapp-ai-bot.nakultelestock.com/demo-data/real-estate/schedule-visit",
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: {
+          property_id: "string",
+          visit_type: "string",
+          preferred_date: "string",
+          preferred_time: "string",
+          contact_number: "string",
+        },
+      },
+    },
+    {
+      name: "get_scheduled_visits",
+      description: "Get all scheduled property visits",
+      examples: ["Get all scheduled visits", "Show me my scheduled visits"],
+      apiInfo: {
+        url: "https://whatsapp-ai-bot.nakultelestock.com/demo-data/real-estate/get-scheduled-visits",
+        method: "GET",
+      },
     },
     {
       name: "cancel_visit",
@@ -87,6 +135,18 @@ module.exports = {
         "Cancel my visit booking 12345",
         "Cancel visit for property ABC123",
       ],
+      apiInfo: {
+        url: "https://whatsapp-ai-bot.nakultelestock.com/demo-data/real-estate/cancel-visit",
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: {
+          booking_id: "string",
+          property_id: "string",
+          reason: "string",
+        },
+      },
     },
     {
       name: "get_loan_estimate",
@@ -105,6 +165,19 @@ module.exports = {
         "Calculate EMI for ₹50L property with 20% down payment",
         "Get loan estimate for 1Cr property for 20 years",
       ],
+      apiInfo: {
+        url: "https://whatsapp-ai-bot.nakultelestock.com/demo-data/real-estate/get-loan-estimate",
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: {
+          property_price: "number",
+          down_payment: "number",
+          loan_tenure: "number",
+          interest_rate: "number",
+        },
+      },
     },
     {
       name: "get_area_info",
@@ -123,6 +196,18 @@ module.exports = {
         "Tell me about Whitefield area in Bangalore",
         "What are the amenities in Gurgaon Sector 29?",
       ],
+      apiInfo: {
+        url: "https://whatsapp-ai-bot.nakultelestock.com/demo-data/real-estate/get-area-info",
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: {
+          area_name: "string",
+          city: "string",
+          info_type: "string",
+        },
+      },
     },
     {
       name: "compare_properties",
@@ -142,6 +227,17 @@ module.exports = {
         "Compare properties ABC123 and XYZ789",
         "Compare these 3 properties on price and amenities",
       ],
+      apiInfo: {
+        url: "https://whatsapp-ai-bot.nakultelestock.com/demo-data/real-estate/compare-properties",
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: {
+          property_ids: "array",
+          comparison_criteria: "array",
+        },
+      },
     },
   ],
 

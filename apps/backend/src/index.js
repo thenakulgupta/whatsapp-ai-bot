@@ -18,6 +18,8 @@ const adminRoutes = require("./routes/admin");
 const chatRoutes = require("./routes/chats");
 const ticketRoutes = require("./routes/tickets");
 const analyticsRoutes = require("./routes/analytics");
+const demoDataEcommerceRoutes = require("./routes/demoDataEcommerceRoutes");
+const demoDataRealEstateRoutes = require("./routes/demoDataRealEstateRoutes");
 
 // Import services
 const { initializeWebSocket } = require("./services/wsHub");
@@ -121,6 +123,8 @@ app.use("/api/admin", adminRoutes);
 app.use("/api/chats", chatRoutes);
 app.use("/api/tickets", ticketRoutes);
 app.use("/api/analytics", analyticsRoutes);
+app.use("/demo-data/ecommerce", demoDataEcommerceRoutes);
+app.use("/demo-data/real-estate", demoDataRealEstateRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {

@@ -34,8 +34,8 @@ module.exports = {
         "Search for laptops in electronics category",
       ],
       apiInfo: {
-        url: "https://api.ecommerce.com/search",
-        method: "POST",
+        url: "https://whatsapp-ai-bot.nakultelestock.com/demo-data/ecommerce/search",
+        method: "GET",
         headers: {
           "Content-Type": "application/json",
         },
@@ -57,13 +57,13 @@ module.exports = {
         "Tell me about iPhone 15 Pro",
       ],
       apiInfo: {
-        url: "https://api.ecommerce.com/search",
-        method: "POST",
+        url: "https://whatsapp-ai-bot.nakultelestock.com/demo-data/ecommerce/get-product-details",
+        method: "GET",
         headers: {
           "Content-Type": "application/json",
         },
         body: {
-          query: "string",
+          product_id: "string",
         },
       },
     },
@@ -78,6 +78,16 @@ module.exports = {
       },
       required: ["order_id"],
       examples: ["Track my order #12345", "Where is my order ORD789?"],
+      apiInfo: {
+        url: "https://whatsapp-ai-bot.nakultelestock.com/demo-data/ecommerce/track-order",
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: {
+          order_id: "string",
+        },
+      },
     },
     {
       name: "cancel_order",
@@ -91,6 +101,16 @@ module.exports = {
         "Cancel my order #12345",
         "Cancel order ORD789 because I changed my mind",
       ],
+      apiInfo: {
+        url: "https://whatsapp-ai-bot.nakultelestock.com/demo-data/ecommerce/cancel-order",
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: {
+          order_id: "string",
+        },
+      },
     },
     {
       name: "initiate_return",
@@ -109,6 +129,19 @@ module.exports = {
         "I want to return product ABC123 from order #12345",
         "Initiate exchange for defective item",
       ],
+      apiInfo: {
+        url: "https://whatsapp-ai-bot.nakultelestock.com/demo-data/ecommerce/initiate-return",
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: {
+          order_id: "string",
+          product_id: "string",
+          reason: "string",
+          return_type: "string",
+        },
+      },
     },
     {
       name: "get_order_history",
@@ -124,6 +157,17 @@ module.exports = {
         },
       },
       examples: ["Show my order history", "Get my orders from last month"],
+      apiInfo: {
+        url: "https://whatsapp-ai-bot.nakultelestock.com/demo-data/ecommerce/get-order-history",
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: {
+          date_range: "string",
+          status: "string",
+        },
+      },
     },
     {
       name: "add_to_cart",
@@ -141,11 +185,33 @@ module.exports = {
         "Add iPhone 15 to cart",
         "Add 2 units of product ABC123 to cart",
       ],
+      apiInfo: {
+        url: "https://whatsapp-ai-bot.nakultelestock.com/demo-data/ecommerce/add-to-cart",
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: {
+          product_id: "string",
+          quantity: "number",
+          variant: "string",
+        },
+      },
     },
     {
       name: "get_cart",
       description: "View items in shopping cart",
       examples: ["Show my cart", "What's in my shopping cart?"],
+      apiInfo: {
+        url: "https://whatsapp-ai-bot.nakultelestock.com/demo-data/ecommerce/get-cart",
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: {
+          cart_id: "string",
+        },
+      },
     },
     {
       name: "apply_coupon",
@@ -159,6 +225,17 @@ module.exports = {
       },
       required: ["coupon_code"],
       examples: ["Apply coupon SAVE20", "Use discount code WELCOME10"],
+      apiInfo: {
+        url: "https://whatsapp-ai-bot.nakultelestock.com/demo-data/ecommerce/apply-coupon",
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: {
+          coupon_code: "string",
+          order_id: "string",
+        },
+      },
     },
     {
       name: "check_availability",
@@ -173,6 +250,18 @@ module.exports = {
         "Check if iPhone 15 is available",
         "Is product ABC123 in stock?",
       ],
+      apiInfo: {
+        url: "https://whatsapp-ai-bot.nakultelestock.com/demo-data/ecommerce/check-availability",
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: {
+          product_id: "string",
+          pincode: "string",
+          quantity: "number",
+        },
+      },
     },
   ],
 
