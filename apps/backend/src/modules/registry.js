@@ -3,6 +3,7 @@ const path = require("path");
 const Module = require("../db/models/Module");
 const logger = require("../config/logger");
 const { default: axios } = require("axios");
+const nlpService = require("../services/nlp");
 
 class ModuleRegistry {
   constructor() {
@@ -192,7 +193,13 @@ class ModuleRegistry {
   /**
    * Execute module function
    */
-  async executeFunction(moduleId, functionName, parameters, context = {}) {
+  async executeFunction(
+    moduleId,
+    functionName,
+    parameters,
+    context = {},
+    message
+  ) {
     try {
       const module = this.getModule(moduleId);
       if (!module) {
@@ -234,18 +241,73 @@ class ModuleRegistry {
         });
       }
 
-      console.log({ response });
+      let responseText = null;
 
-      // Execute function
-      // const result = await functionModule.execute(parameters, context);
+      // using ai to generate response text
+      try {
+        if (response?.data?.data) {
+          const apiResponseData = response.data.data;
+          const functionDescription =
+            functionManifest?.description || functionName;
 
-      // logger.info(`Executed function ${functionName} in module ${moduleId}`, {
-      //   parameters,
-      //   success: result.success,
-      // });
+          // Build prompt for AI to generate WhatsApp message
+          const prompt = `You are a helpful WhatsApp assistant. Generate a friendly, conversational message for the user based on the following information:
 
-      // return result;
-      return {};
+User's original request: "${message}"
+Function: ${functionDescription}
+API Response Data: ${JSON.stringify(apiResponseData, null, 2)}
+
+Instructions:
+- Generate a clear, friendly WhatsApp message that presents the information from the API response
+- Keep it concise and conversational (WhatsApp messages should be easy to read)
+- Use appropriate emojis if it makes the message friendlier
+- If the response contains order tracking information, present it in a clear format
+- If the response contains error information, communicate it empathetically
+- Write in a natural, human-like tone
+- Don't mention technical details like API calls or function names
+- Focus on the actual information the user needs
+
+Generate only the message text, nothing else.`;
+
+          responseText = await nlpService.generateResponse(
+            prompt,
+            {
+              moduleId,
+              functionName,
+              functionDescription,
+              apiResponseData,
+            },
+            []
+          );
+        } else {
+          // Fallback if no API response data
+          responseText = await nlpService.generateResponse(
+            `Generate a friendly WhatsApp message confirming that the request "${message}" has been processed successfully for the function: ${functionManifest?.description || functionName}. Keep it brief and conversational.`,
+            { moduleId, functionName },
+            []
+          );
+        }
+      } catch (error) {
+        logger.error("Failed to generate AI response text", {
+          error: error.message,
+          moduleId,
+          functionName,
+        });
+        // Fallback response if AI generation fails
+        if (response?.data?.data) {
+          responseText = `I've processed your request. ${JSON.stringify(response.data.data)}`;
+        } else {
+          responseText = "Your request has been processed successfully.";
+        }
+      }
+
+      return {
+        success: true,
+        result: response?.data?.data,
+        response: responseText,
+        functionName,
+        moduleId,
+      };
     } catch (error) {
       logger.error(
         `Failed to execute function ${functionName} in module ${moduleId}`,

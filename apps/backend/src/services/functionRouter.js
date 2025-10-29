@@ -58,7 +58,8 @@ class FunctionRouter {
         moduleId,
         intentResult.intent,
         intentResult.entities,
-        context
+        context,
+        message
       );
 
       return {
@@ -66,7 +67,7 @@ class FunctionRouter {
         functionName: intentResult.intent,
         parameters: intentResult.entities,
         result: functionResult.result,
-        response: functionResult.response || functionResult.result,
+        response: functionResult.response,
         confidence: intentResult.confidence,
         reasoning: intentResult.reasoning,
       };
@@ -89,7 +90,13 @@ class FunctionRouter {
   /**
    * Execute a specific function
    */
-  async executeFunction(moduleId, functionName, parameters, context = {}) {
+  async executeFunction(
+    moduleId,
+    functionName,
+    parameters,
+    context = {},
+    message
+  ) {
     try {
       // Validate function exists
       const validation = this.moduleRegistry.validateFunction(
@@ -110,7 +117,8 @@ class FunctionRouter {
         moduleId,
         functionName,
         parameters,
-        context
+        context,
+        message
       );
 
       return result;
@@ -134,12 +142,17 @@ class FunctionRouter {
    * Generate clarification response when intent is unclear
    */
   generateClarificationResponse(availableFunctions, detectedIntent) {
-    const functionNames = availableFunctions.map((f) => f.name).join(", ");
-
     if (detectedIntent === "general_query") {
-      return `I'm not sure what you'd like me to help you with. Here are some things I can do:\n\n${availableFunctions
-        .map((f) => `• ${f.name}: ${f.description}`)
-        .join("\n")}\n\nPlease be more specific about what you need.`;
+      // Format response with natural language examples instead of technical function names
+      const options = availableFunctions
+        .map((f) => {
+          const example =
+            f.examples && f.examples.length > 0 ? f.examples[0] : f.description;
+          return `• ${f.description} - Try: "${example}"`;
+        })
+        .join("\n");
+
+      return `I'm not sure what you'd like me to help you with. Here are some things I can do:\n\n${options}\n\nWhich option sounds like what you need? 😊`;
     } else {
       return `I think you want to ${detectedIntent}, but I'm not completely sure. Could you please rephrase your request or be more specific?`;
     }
@@ -203,7 +216,11 @@ class FunctionRouter {
     if (lowerMessage.includes("help") || lowerMessage === "?") {
       const functions = this.getAvailableFunctions(moduleId);
       const helpText = `Here's what I can help you with:\n\n${functions
-        .map((f) => `• ${f.name}: ${f.description}`)
+        .map((f) => {
+          const example =
+            f.examples && f.examples.length > 0 ? f.examples[0] : f.description;
+          return `• ${f.description} - Try: "${example}"`;
+        })
         .join("\n")}\n\nType "exit" to return to the main menu.`;
 
       return {
@@ -291,9 +308,27 @@ class FunctionRouter {
   async generateFallbackResponse(message, moduleId, context = {}) {
     try {
       const availableFunctions = this.getAvailableFunctions(moduleId);
-      const functionNames = availableFunctions.map((f) => f.name).join(", ");
 
-      const prompt = `The user sent: "${message}" in module ${moduleId}. Available functions: ${functionNames}. Generate a helpful response that acknowledges their message and guides them to use available functions.`;
+      // Build a helpful prompt with natural language examples
+      const functionExamples = availableFunctions
+        .map((f) => {
+          const example =
+            f.examples && f.examples.length > 0 ? f.examples[0] : f.description;
+          return `${f.description} (e.g., "${example}")`;
+        })
+        .join(", ");
+
+      const prompt = `The user sent: "${message}" in module ${moduleId}. 
+
+Available capabilities: ${functionExamples}
+
+Generate a helpful, friendly response that:
+1. Acknowledges their message
+2. Guides them naturally using real examples (NOT technical function names)
+3. Uses conversational language like "Search for products by typing 'search product T-Shirt'" instead of "search_products [product name]"
+4. Is warm and encouraging
+
+Keep it brief and user-friendly.`;
 
       const response = await nlpService.generateResponse(
         prompt,
@@ -305,7 +340,18 @@ class FunctionRouter {
       logger.error("Fallback response generation failed", {
         error: error.message,
       });
-      return 'I understand you need help, but I\'m not sure how to assist with that specific request. Type "help" to see what I can do, or "exit" to return to the main menu.';
+
+      // Fallback with natural language examples
+      const availableFunctions = this.getAvailableFunctions(moduleId);
+      const examples = availableFunctions
+        .slice(0, 3)
+        .map((f) =>
+          f.examples && f.examples.length > 0 ? f.examples[0] : null
+        )
+        .filter(Boolean)
+        .join(", ");
+
+      return `I understand you need help, but I'm not sure how to assist with that specific request. Try asking in natural language like: "${examples}". Type "help" to see more options, or "exit" to return to the main menu.`;
     }
   }
 }

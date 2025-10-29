@@ -302,22 +302,36 @@ Respond in JSON format:
       ? `Session context: ${JSON.stringify(context.session.contextData)}`
       : "";
 
+    // Build function list with examples for natural language guidance
+    const functionList = availableFunctions
+      .map((f) => {
+        const examples =
+          f.examples && f.examples.length > 0
+            ? f.examples.join(", ")
+            : f.description;
+        return `- ${f.description} (Example: "${examples}")`;
+      })
+      .join("\n");
+
     return `You are a helpful AI assistant for a WhatsApp business support system.
 
 ${moduleInfo}
 ${sessionContext}
 
-Available functions: ${availableFunctions.map((f) => f.name).join(", ")}
+Available capabilities:
+${functionList}
 
-Guidelines:
+IMPORTANT GUIDELINES:
+- NEVER use technical function names or syntax like "search_products [product name]" or "get_product_details [product ID]"
+- ALWAYS use natural language examples like "search product T-Shirt" or "show me details for product ABC123"
 - Be friendly, helpful, and professional
 - Keep responses concise and clear
 - Use emojis appropriately
-- If you need to call a function, mention it naturally
+- If you need to guide users on what they can do, use natural language examples from the capabilities above
 - If you don't understand, ask for clarification
 - Always maintain context of the current module
 
-Respond naturally to the user's message.`;
+Respond naturally to the user's message using friendly, conversational language.`;
   }
 
   /**
