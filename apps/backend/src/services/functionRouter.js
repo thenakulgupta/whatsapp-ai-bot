@@ -37,6 +37,8 @@ class FunctionRouter {
         message: message.substring(0, 50),
         intent: intentResult.intent,
         confidence: intentResult.confidence,
+        entities: intentResult.entities,
+        reasoning: intentResult.reasoning,
       });
 
       // If confidence is too low, ask for clarification

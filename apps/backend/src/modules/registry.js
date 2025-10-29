@@ -2,6 +2,7 @@ const fs = require("fs");
 const path = require("path");
 const Module = require("../db/models/Module");
 const logger = require("../config/logger");
+const { default: axios } = require("axios");
 
 class ModuleRegistry {
   constructor() {
@@ -198,22 +199,53 @@ class ModuleRegistry {
         throw new Error(`Module ${moduleId} not found`);
       }
 
-      const functionModule = module.functions.get(functionName);
-      if (!functionModule) {
+      const functionManifest = module?.manifest?.functions?.find(
+        (f) => f?.name?.toLowerCase() === functionName?.toLowerCase()
+      );
+
+      const apiInfo = functionManifest?.apiInfo ?? null;
+
+      if (!apiInfo) {
         throw new Error(
           `Function ${functionName} not found in module ${moduleId}`
         );
       }
 
-      // Execute function
-      const result = await functionModule.execute(parameters, context);
+      const url = apiInfo?.url ?? null;
+      const method = apiInfo?.method ?? null;
+      const headers = apiInfo?.headers ?? null;
+      const body = apiInfo?.body ?? null;
 
-      logger.info(`Executed function ${functionName} in module ${moduleId}`, {
-        parameters,
-        success: result.success,
+      const bodyParams = {};
+
+      Object.keys(body).forEach((key) => {
+        bodyParams[key] = parameters[key];
       });
 
-      return result;
+      let response = null;
+
+      if (method?.toLowerCase() === "get") {
+        response = await axios.get(url, { params: bodyParams, headers });
+      } else if (method?.toLowerCase() === "post") {
+        response = await axios.post(url, bodyParams, { headers });
+      } else if (method?.toLowerCase() === "put") {
+        response = await axios.put(url, bodyParams, {
+          headers,
+        });
+      }
+
+      console.log({ response });
+
+      // Execute function
+      // const result = await functionModule.execute(parameters, context);
+
+      // logger.info(`Executed function ${functionName} in module ${moduleId}`, {
+      //   parameters,
+      //   success: result.success,
+      // });
+
+      // return result;
+      return {};
     } catch (error) {
       logger.error(
         `Failed to execute function ${functionName} in module ${moduleId}`,

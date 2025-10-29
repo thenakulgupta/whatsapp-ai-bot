@@ -263,7 +263,10 @@ class NLPService {
    */
   buildIntentDetectionPrompt(availableFunctions, context) {
     const functionList = availableFunctions
-      .map((func) => `- ${func.name}: ${func.description}`)
+      .map(
+        (func) =>
+          `- ${func.name}: ${func.description}. Parameters: ${JSON.stringify(func.parameters)}. Required: ${JSON.stringify(func.required)}`
+      )
       .join("\n");
 
     return `You are an intent detection system for a WhatsApp AI assistant. 
