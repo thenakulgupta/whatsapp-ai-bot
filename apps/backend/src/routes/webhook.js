@@ -127,7 +127,49 @@ async function handleTextMessage(from, message, req, res) {
       return;
     }
 
-    // Create chat record with active module
+    // Check if there's an open ticket for this user
+    const Ticket = require("../db/models/Ticket");
+    const openTicket = await Ticket.findOne({
+      userPhone: from,
+      moduleId: activeModule.activeModuleId,
+      status: { $in: ["open", "assigned", "in_progress"] },
+    }).sort({ createdAt: -1 });
+
+    // If there's an open ticket, only store the message and notify agent
+    // Don't send AI response - agent will respond
+    if (openTicket) {
+      const chat = new Chat({
+        userPhone: from,
+        moduleId: activeModule.activeModuleId,
+        sessionId: req.session?._id || null,
+        message: message,
+        senderType: "user",
+        messageType: "text",
+        language: req.detectedLanguage || "en",
+        status: "completed",
+        ticketId: openTicket._id,
+      });
+
+      await chat.save();
+
+      // Emit WebSocket event for real-time chat updates to agent dashboard
+      const { wsHub } = require("../services/wsHub");
+      wsHub.emitToAll("new_message", {
+        ticketId: openTicket._id,
+        message: chat,
+      });
+
+      logger.info("User message received during active ticket - AI response disabled", {
+        from,
+        ticketId: openTicket._id,
+        message: message.substring(0, 50),
+      });
+
+      // Don't send any response - agent will handle it
+      return;
+    }
+
+    // No active ticket - proceed with AI response
     const chat = new Chat({
       userPhone: from,
       moduleId: activeModule.activeModuleId,

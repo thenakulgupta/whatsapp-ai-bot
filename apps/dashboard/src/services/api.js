@@ -62,6 +62,8 @@ export const endpoints = {
   ticket: (id) => `/tickets/${id}`,
   assignTicket: (id) => `/tickets/${id}/assign`,
   updateTicket: (id) => `/tickets/${id}`,
+  ticketMessages: (id) => `/tickets/${id}/messages`,
+  sendTicketMessage: (id) => `/tickets/${id}/messages`,
 
   // Agents
   agents: "/admin/agents",

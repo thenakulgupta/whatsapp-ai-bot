@@ -36,6 +36,7 @@ import {
   Refresh as RefreshIcon,
   Search as SearchIcon,
   Edit as EditIcon,
+  Chat as ChatIcon,
 } from "@mui/icons-material";
 import {
   fetchTickets,
@@ -50,6 +51,7 @@ import { selectSelectedModule } from "../state/moduleSlice";
 import wsService from "../services/ws";
 import { formatDistanceToNow } from "date-fns";
 import toast from "react-hot-toast";
+import TicketChatDialog from "./TicketChatDialog";
 
 function Tickets() {
   const dispatch = useDispatch();
@@ -72,6 +74,10 @@ function Tickets() {
     ticket: null,
   });
   const [resolution, setResolution] = useState("");
+  const [chatDialog, setChatDialog] = useState({
+    open: false,
+    ticket: null,
+  });
 
   // Debug: Log agents and selectedAgentId changes
   useEffect(() => {
@@ -215,6 +221,10 @@ function Tickets() {
 
   const handleCloseTicket = (ticketId) => {
     dispatch(closeTicket(ticketId));
+  };
+
+  const handleChatClick = (ticket) => {
+    setChatDialog({ open: true, ticket });
   };
 
   const getStatusColor = (status) => {
@@ -502,6 +512,15 @@ function Tickets() {
                         gap: 1,
                       }}
                     >
+                      <Tooltip title="Open Chat">
+                        <IconButton
+                          size="small"
+                          onClick={() => handleChatClick(ticket)}
+                          color="primary"
+                        >
+                          <ChatIcon />
+                        </IconButton>
+                      </Tooltip>
                       {ticket.status === "open" && (
                         <Tooltip title="Assign Ticket">
                           <IconButton
@@ -758,6 +777,13 @@ function Tickets() {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Chat Dialog */}
+      <TicketChatDialog
+        open={chatDialog.open}
+        onClose={() => setChatDialog({ open: false, ticket: null })}
+        ticket={chatDialog.ticket}
+      />
     </Box>
   );
 }

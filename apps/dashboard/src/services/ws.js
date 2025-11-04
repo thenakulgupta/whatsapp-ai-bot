@@ -127,6 +127,11 @@ class WebSocketService {
       this.emit("agent_offline", data);
     });
 
+    // Message updates
+    this.socket.on("new_message", (data) => {
+      this.emit("new_message", data);
+    });
+
     this.socket.on("agent_status_update", (data) => {
       this.emit("agent_status_update", data);
     });

@@ -456,6 +456,18 @@ class WebSocketHub {
     }
     return agents;
   }
+
+  /**
+   * Emit event to all connected clients and agents
+   */
+  emitToAll(event, data) {
+    if (this.io) {
+      this.io.emit(event, {
+        ...data,
+        timestamp: new Date().toISOString(),
+      });
+    }
+  }
 }
 
 // Create singleton instance

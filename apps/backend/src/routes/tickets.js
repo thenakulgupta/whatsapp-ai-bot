@@ -573,6 +573,111 @@ router.get("/analytics/trends", authenticate, async (req, res) => {
 });
 
 /**
+ * Get chat history for a ticket
+ */
+router.get("/:id/messages", authenticate, async (req, res) => {
+  try {
+    const Chat = require("../db/models/Chat");
+    const ticket = await Ticket.findById(req.params.id);
+
+    if (!ticket) {
+      return res.status(404).json({ error: "Ticket not found" });
+    }
+
+    // Get only messages from when the ticket was created onwards
+    // This shows only the conversation during the escalated/ticket period
+    const messages = await Chat.find({
+      userPhone: ticket.userPhone,
+      moduleId: ticket.moduleId,
+      createdAt: { $gte: ticket.createdAt }, // Only messages after ticket creation
+    })
+      .sort({ createdAt: 1 })
+      .limit(100)
+      .populate("escalatedTo", "name email");
+
+    res.json({ messages });
+  } catch (error) {
+    logger.error("Failed to fetch ticket messages", { error: error.message });
+    res.status(500).json({ error: "Failed to fetch ticket messages" });
+  }
+});
+
+/**
+ * Send message to user (from agent)
+ */
+router.post("/:id/messages", authenticate, async (req, res) => {
+  try {
+    const { message } = req.body;
+
+    if (!message || !message.trim()) {
+      return res.status(400).json({ error: "Message is required" });
+    }
+
+    const Chat = require("../db/models/Chat");
+    const whatsappService = require("../services/whatsapp");
+    const { wsHub } = require("../services/wsHub");
+
+    const ticket = await Ticket.findById(req.params.id);
+    if (!ticket) {
+      return res.status(404).json({ error: "Ticket not found" });
+    }
+
+    // Create chat record for agent message
+    const chat = new Chat({
+      userPhone: ticket.userPhone,
+      moduleId: ticket.moduleId,
+      sessionId: ticket.sessionId,
+      message: message,
+      senderType: "human",
+      messageType: "text",
+      status: "completed",
+      ticketId: ticket._id,
+    });
+
+    await chat.save();
+
+    // Send message via WhatsApp
+    try {
+      await whatsappService.sendTextMessage(ticket.userPhone, message);
+
+      logger.info("Agent message sent to user", {
+        ticketId: ticket._id,
+        agentId: req.agent._id,
+        userPhone: ticket.userPhone,
+      });
+
+      // Emit WebSocket event for real-time updates
+      wsHub.emitToAll("new_message", {
+        ticketId: ticket._id,
+        message: chat,
+      });
+
+      res.json({
+        success: true,
+        message: "Message sent successfully",
+        chat,
+      });
+    } catch (whatsappError) {
+      logger.error("Failed to send WhatsApp message", {
+        error: whatsappError.message,
+        ticketId: ticket._id,
+      });
+
+      // Mark chat as failed
+      await chat.markAsFailed(whatsappError);
+
+      res.status(500).json({
+        error: "Failed to send message via WhatsApp",
+        details: whatsappError.message,
+      });
+    }
+  } catch (error) {
+    logger.error("Failed to send message", { error: error.message });
+    res.status(500).json({ error: "Failed to send message" });
+  }
+});
+
+/**
  * Helper function to get start date based on period
  */
 function getStartDate(period) {
