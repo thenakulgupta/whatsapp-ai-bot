@@ -202,7 +202,7 @@ const createDefaultAdmin = async () => {
         role: "admin",
         isActive: true,
         assignedModules: [], // Admin has access to all modules
-        maxConcurrentTickets: 100,
+        maxConcurrentTickets: 1000,
       });
 
       await defaultAdmin.save();
@@ -229,13 +229,13 @@ const requireOnline = (req, res, next) => {
 
 /**
  * Middleware to check agent workload
+ * Allow agents to handle multiple people in parallel
+ * Only check if agent is online, not strict limit on concurrent tickets
  */
 const checkWorkload = (req, res, next) => {
-  if (req.agent.currentTickets.length >= req.agent.maxConcurrentTickets) {
+  if (!req.agent.isOnline) {
     return res.status(403).json({
-      error: "Agent workload limit reached",
-      currentTickets: req.agent.currentTickets.length,
-      maxTickets: req.agent.maxConcurrentTickets,
+      error: "Agent must be online to handle tickets",
     });
   }
   next();

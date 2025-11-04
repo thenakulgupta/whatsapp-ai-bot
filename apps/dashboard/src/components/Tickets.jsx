@@ -44,14 +44,20 @@ import {
   resolveTicket,
   closeTicket,
 } from "../state/ticketSlice";
+import { fetchAgents } from "../state/agentSlice";
+import { selectAgents } from "../state/agentSlice";
 import { selectSelectedModule } from "../state/moduleSlice";
 import wsService from "../services/ws";
 import { formatDistanceToNow } from "date-fns";
+import toast from "react-hot-toast";
 
 function Tickets() {
   const dispatch = useDispatch();
   const selectedModule = useSelector(selectSelectedModule);
   const { tickets, loading, error } = useSelector((state) => state.tickets);
+  const agents = useSelector(selectAgents);
+  const [onAssignTicketDropdownClick, setOnAssignTicketDropdownClick] =
+    useState(false);
 
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
@@ -60,14 +66,29 @@ function Tickets() {
     open: false,
     ticket: null,
   });
+  const [selectedAgentId, setSelectedAgentId] = useState("");
   const [resolveDialog, setResolveDialog] = useState({
     open: false,
     ticket: null,
   });
   const [resolution, setResolution] = useState("");
 
+  // Debug: Log agents and selectedAgentId changes
+  useEffect(() => {
+    console.log("🟣 Agents updated:", agents);
+    console.log(
+      "🟣 Active & Online agents:",
+      agents?.filter((agent) => agent.isActive && agent.isOnline)
+    );
+  }, [agents]);
+
+  useEffect(() => {
+    console.log("🟣 selectedAgentId changed to:", selectedAgentId);
+  }, [selectedAgentId]);
+
   useEffect(() => {
     fetchTicketsData();
+    dispatch(fetchAgents());
 
     // Setup WebSocket listeners
     wsService.on("new_ticket", handleNewTicket);
@@ -80,6 +101,15 @@ function Tickets() {
       wsService.off("ticket_assigned", handleTicketAssigned);
     };
   }, [selectedModule]);
+
+  // Show error notifications
+  useEffect(() => {
+    if (error) {
+      toast.error(
+        typeof error === "string" ? error : "Failed to assign ticket"
+      );
+    }
+  }, [error]);
 
   const fetchTicketsData = () => {
     dispatch(
@@ -103,18 +133,61 @@ function Tickets() {
   };
 
   const handleAssignClick = (ticket) => {
+    console.log("🔵 handleAssignClick called with ticket:", ticket);
     setAssignDialog({ open: true, ticket });
+    setSelectedAgentId("");
+    console.log("🔵 selectedAgentId reset to empty string");
+    // Refresh agents list to get latest status
+    dispatch(fetchAgents());
   };
 
-  const handleAssignSubmit = (agentId) => {
-    if (assignDialog.ticket) {
-      dispatch(
+  const handleAssignSubmit = async () => {
+    console.log("🟢 handleAssignSubmit called");
+    console.log("🟢 assignDialog.ticket:", assignDialog.ticket);
+    console.log("🟢 selectedAgentId:", selectedAgentId);
+    console.log("🟢 selectedAgentId type:", typeof selectedAgentId);
+    console.log("🟢 selectedAgentId truthy?", !!selectedAgentId);
+
+    if (assignDialog.ticket && selectedAgentId) {
+      const ticketId = assignDialog.ticket._id || assignDialog.ticket.id;
+      console.log("🟢 Ticket ID:", ticketId);
+      if (!ticketId) {
+        console.error("❌ Ticket ID is missing", assignDialog.ticket);
+        return;
+      }
+      if (!selectedAgentId) {
+        console.error("❌ Agent ID is required");
+        return;
+      }
+
+      console.log("🟢 Dispatching assignTicket with:", {
+        ticketId,
+        agentId: selectedAgentId,
+      });
+      const result = await dispatch(
         assignTicket({
-          ticketId: assignDialog.ticket.id,
-          agentId,
+          ticketId,
+          agentId: selectedAgentId,
         })
       );
-      setAssignDialog({ open: false, ticket: null });
+
+      console.log("🟢 assignTicket result:", result);
+      if (assignTicket.fulfilled.match(result)) {
+        console.log("✅ Ticket assigned successfully");
+        // Success - refresh agents and tickets
+        dispatch(fetchAgents());
+        fetchTicketsData();
+        setAssignDialog({ open: false, ticket: null });
+        setSelectedAgentId("");
+      } else {
+        console.error("❌ Ticket assignment failed:", result);
+        // Error is already stored in Redux state
+        // The error message will be shown by the error state
+      }
+    } else {
+      console.warn("⚠️ Missing ticket or agentId");
+      console.warn("⚠️ assignDialog.ticket:", assignDialog.ticket);
+      console.warn("⚠️ selectedAgentId:", selectedAgentId);
     }
   };
 
@@ -125,9 +198,14 @@ function Tickets() {
 
   const handleResolveSubmit = () => {
     if (resolveDialog.ticket && resolution) {
+      const ticketId = resolveDialog.ticket._id || resolveDialog.ticket.id;
+      if (!ticketId) {
+        console.error("Ticket ID is missing", resolveDialog.ticket);
+        return;
+      }
       dispatch(
         resolveTicket({
-          ticketId: resolveDialog.ticket.id,
+          ticketId,
           resolution,
         })
       );
@@ -298,7 +376,7 @@ function Tickets() {
           ) : (
             <List>
               {filteredTickets.map((ticket, index) => (
-                <React.Fragment key={ticket.id}>
+                <React.Fragment key={ticket._id || ticket.id || index}>
                   <ListItem
                     sx={{
                       borderRadius: 1,
@@ -448,7 +526,9 @@ function Tickets() {
                         <Tooltip title="Close Ticket">
                           <IconButton
                             size="small"
-                            onClick={() => handleCloseTicket(ticket.id)}
+                            onClick={() =>
+                              handleCloseTicket(ticket._id || ticket.id)
+                            }
                           >
                             <EditIcon />
                           </IconButton>
@@ -467,30 +547,178 @@ function Tickets() {
       {/* Assign Dialog */}
       <Dialog
         open={assignDialog.open}
-        onClose={() => setAssignDialog({ open: false, ticket: null })}
+        onClose={() => {
+          setAssignDialog({ open: false, ticket: null });
+          setSelectedAgentId("");
+        }}
       >
         <DialogTitle>Assign Ticket</DialogTitle>
         <DialogContent>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
             Assign ticket "{assignDialog.ticket?.title}" to an agent
           </Typography>
-          <FormControl fullWidth>
-            <InputLabel>Select Agent</InputLabel>
-            <Select
-              label="Select Agent"
-              onChange={(e) => handleAssignSubmit(e.target.value)}
-            >
-              {/* This would be populated with available agents */}
-              <MenuItem value="agent1">Agent 1</MenuItem>
-              <MenuItem value="agent2">Agent 2</MenuItem>
-            </Select>
+          <FormControl fullWidth sx={{ mt: 2 }}>
+            <InputLabel id="agent-select-label">Select Agent</InputLabel>
+            {agents && agents.length > 0 ? (
+              <Select
+                open={onAssignTicketDropdownClick}
+                labelId="agent-select-label"
+                label="Select Agent"
+                value={selectedAgentId || ""}
+                displayEmpty
+                inputProps={{
+                  "aria-label": "Select Agent",
+                }}
+                onChange={(e) => {
+                  console.log("🟢 Select onChange triggered");
+                  console.log("🟢 Event:", e);
+                  console.log("🟢 Target value:", e.target.value);
+                  console.log("🟢 Current selectedAgentId:", selectedAgentId);
+                  const newValue = e.target.value;
+
+                  // Verify the value exists in available agents
+                  const validAgentIds =
+                    agents
+                      ?.filter((agent) => agent.isActive && agent.isOnline)
+                      .map((agent) => String(agent._id || agent.id)) || [];
+                  console.log("🟢 Valid agent IDs:", validAgentIds);
+                  console.log(
+                    "🟢 New value in valid IDs?",
+                    validAgentIds.includes(newValue)
+                  );
+
+                  if (newValue === "" || validAgentIds.includes(newValue)) {
+                    setSelectedAgentId(newValue);
+                    console.log("🟢 selectedAgentId updated to:", newValue);
+                  } else {
+                    console.warn("⚠️ Invalid agent ID selected, ignoring");
+                  }
+                }}
+                onClick={(e) => {
+                  console.log("🟢 Select clicked");
+                  e.stopPropagation();
+                  e.preventDefault();
+                }}
+                onClose={(e, reason) => {
+                  setOnAssignTicketDropdownClick(false);
+                  console.log("🔴 Select closed");
+                  console.log("🔴 Close event:", e);
+                  console.log("🔴 Close reason:", reason);
+                  console.log("🔴 Final selectedAgentId:", selectedAgentId);
+
+                  // If closed by clicking outside or escape, don't change selection
+                  // If closed by selection, the onChange should have already fired
+                  if (
+                    reason === "backdropClick" ||
+                    reason === "escapeKeyDown"
+                  ) {
+                    console.log(
+                      "🔴 Closed by backdrop/escape - keeping current selection"
+                    );
+                  }
+                }}
+                onOpen={() => {
+                  setOnAssignTicketDropdownClick(true);
+                  console.log("🟡 Select opened");
+                  console.log("🟡 Current selectedAgentId:", selectedAgentId);
+                  console.log("🟡 Available agents count:", agents?.length);
+                  console.log(
+                    "🟡 Filtered agents:",
+                    agents?.filter((agent) => agent.isActive && agent.isOnline)
+                  );
+                }}
+                MenuProps={{
+                  PaperProps: {
+                    style: {
+                      maxHeight: 300,
+                    },
+                  },
+                  autoFocus: false,
+                }}
+              >
+                {agents
+                  .filter((agent) => {
+                    // Show all active and online agents (no strict limit on concurrent tickets)
+                    return agent.isActive && agent.isOnline;
+                  })
+                  .map((agent) => {
+                    const agentId = String(agent._id || agent.id);
+                    console.log(
+                      "🟠 Rendering MenuItem for agent:",
+                      agent.name,
+                      "with ID:",
+                      agentId
+                    );
+                    return (
+                      <MenuItem
+                        key={agentId}
+                        value={agentId}
+                        onClick={() => {
+                          const newValue = agentId;
+                          // Verify the value exists in available agents
+                          const validAgentIds =
+                            agents
+                              ?.filter(
+                                (agent) => agent.isActive && agent.isOnline
+                              )
+                              .map((agent) => String(agent._id || agent.id)) ||
+                            [];
+                          console.log("🟢 Valid agent IDs:", validAgentIds);
+                          console.log(
+                            "🟢 New value in valid IDs?",
+                            validAgentIds.includes(newValue)
+                          );
+
+                          if (
+                            newValue === "" ||
+                            validAgentIds.includes(newValue)
+                          ) {
+                            setSelectedAgentId(newValue);
+                            console.log(
+                              "🟢 selectedAgentId updated to:",
+                              newValue
+                            );
+                            setOnAssignTicketDropdownClick(false);
+                          } else {
+                            console.warn(
+                              "⚠️ Invalid agent ID selected, ignoring"
+                            );
+                          }
+                        }}
+                      >
+                        {agent.name} ({agent.email}) -{" "}
+                        {agent.currentTickets?.length || 0}/
+                        {agent.maxConcurrentTickets || 1000} tickets
+                      </MenuItem>
+                    );
+                  })}
+                {agents.filter((agent) => agent.isActive && agent.isOnline)
+                  .length === 0 && (
+                  <MenuItem disabled>
+                    No available agents (all offline or inactive)
+                  </MenuItem>
+                )}
+              </Select>
+            ) : (
+              <p>No active agents available</p>
+            )}
           </FormControl>
         </DialogContent>
         <DialogActions>
           <Button
-            onClick={() => setAssignDialog({ open: false, ticket: null })}
+            onClick={() => {
+              setAssignDialog({ open: false, ticket: null });
+              setSelectedAgentId("");
+            }}
           >
             Cancel
+          </Button>
+          <Button
+            variant="contained"
+            onClick={handleAssignSubmit}
+            disabled={!selectedAgentId}
+          >
+            Assign
           </Button>
         </DialogActions>
       </Dialog>

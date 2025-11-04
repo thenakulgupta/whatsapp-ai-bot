@@ -99,9 +99,14 @@ function Chats() {
 
   const handleEscalateSubmit = () => {
     if (escalateDialog.chat && escalateReason) {
+      const chatId = escalateDialog.chat._id || escalateDialog.chat.id;
+      if (!chatId) {
+        console.error("Chat ID is missing", escalateDialog.chat);
+        return;
+      }
       dispatch(
         escalateChat({
-          chatId: escalateDialog.chat.id,
+          chatId,
           reason: escalateReason,
           priority: escalatePriority,
         })
@@ -222,7 +227,7 @@ function Chats() {
           ) : (
             <List>
               {filteredChats.map((chat, index) => (
-                <React.Fragment key={chat.id}>
+                <React.Fragment key={chat._id || chat.id || index}>
                   <ListItem
                     button
                     onClick={() => handleChatClick(chat)}

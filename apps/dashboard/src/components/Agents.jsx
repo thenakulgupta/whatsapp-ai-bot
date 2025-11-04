@@ -66,7 +66,7 @@ function Agents() {
     phone: "",
     role: "agent",
     assignedModules: [],
-    maxConcurrentTickets: 5,
+    maxConcurrentTickets: 1000, // Allow many parallel connections
     isActive: true,
   });
 
@@ -82,7 +82,7 @@ function Agents() {
       phone: "",
       role: "agent",
       assignedModules: [],
-      maxConcurrentTickets: 5,
+      maxConcurrentTickets: 1000, // Allow many parallel connections
       isActive: true,
     });
     setCreateDialog(true);
@@ -96,7 +96,7 @@ function Agents() {
       phone: agent.phone || "",
       role: agent.role,
       assignedModules: agent.assignedModules || [],
-      maxConcurrentTickets: agent.maxConcurrentTickets || 5,
+      maxConcurrentTickets: agent.maxConcurrentTickets || 1000,
       isActive: agent.isActive,
     });
     setEditDialog({ open: true, agent });
@@ -263,7 +263,7 @@ function Agents() {
             <WorkIcon fontSize="small" color="action" />
             <Typography variant="body2" color="text.secondary">
               {agent.currentTickets?.length || 0}/
-              {agent.maxConcurrentTickets || 5} tickets
+              {agent.maxConcurrentTickets || 1000} tickets
             </Typography>
           </Box>
           <Typography variant="caption" color="text.secondary">

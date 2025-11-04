@@ -46,7 +46,7 @@ const agentSchema = new mongoose.Schema(
     ],
     maxConcurrentTickets: {
       type: Number,
-      default: 5,
+      default: 1000, // Allow many parallel connections
     },
     workingHours: {
       start: {
@@ -220,11 +220,9 @@ agentSchema.methods.unassignTicket = function (ticketId) {
 };
 
 agentSchema.methods.canTakeTicket = function () {
-  return (
-    this.isActive &&
-    this.isOnline &&
-    this.currentTickets.length < this.maxConcurrentTickets
-  );
+  // Allow agents to handle multiple people in parallel
+  // Only check if agent is active and online, no strict limit on concurrent tickets
+  return this.isActive && this.isOnline;
 };
 
 agentSchema.methods.updateStats = function (field, value) {
@@ -282,10 +280,11 @@ agentSchema.methods.toPublicJSON = function () {
 
 // Static methods
 agentSchema.statics.findAvailableAgents = function (moduleId = null) {
+  // Allow agents to handle multiple people in parallel
+  // Only filter by active and online status
   const query = {
     isActive: true,
     isOnline: true,
-    $expr: { $lt: [{ $size: "$currentTickets" }, "$maxConcurrentTickets"] },
   };
 
   if (moduleId) {

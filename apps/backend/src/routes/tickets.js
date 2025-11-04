@@ -1,5 +1,6 @@
 const express = require("express");
 const router = express.Router();
+const mongoose = require("mongoose");
 const { authenticate, authorizeModule } = require("../middleware/auth");
 const Ticket = require("../db/models/Ticket");
 const Agent = require("../db/models/Agent");
@@ -105,7 +106,34 @@ router.post("/:id/assign", authenticate, async (req, res) => {
       return res.status(400).json({ error: "Agent ID is required" });
     }
 
-    const ticket = await Ticket.findById(req.params.id);
+    // Validate ticket ID parameter
+    const ticketId = req.params.id;
+    if (
+      !ticketId ||
+      ticketId === "undefined" ||
+      ticketId === "null" ||
+      !mongoose.Types.ObjectId.isValid(ticketId)
+    ) {
+      return res.status(400).json({ error: "Valid ticket ID is required" });
+    }
+
+    // Validate agent ID
+    if (!mongoose.Types.ObjectId.isValid(agentId)) {
+      return res.status(400).json({ error: "Valid agent ID is required" });
+    }
+
+    // Validate agent exists and has valid ID
+    if (
+      !req.agent ||
+      !req.agent._id ||
+      !mongoose.Types.ObjectId.isValid(req.agent._id)
+    ) {
+      return res
+        .status(401)
+        .json({ error: "Valid agent authentication required" });
+    }
+
+    const ticket = await Ticket.findById(ticketId);
     if (!ticket) {
       return res.status(404).json({ error: "Ticket not found" });
     }
@@ -116,7 +144,20 @@ router.post("/:id/assign", authenticate, async (req, res) => {
     }
 
     if (!agent.canTakeTicket()) {
-      return res.status(400).json({ error: "Agent cannot take more tickets" });
+      let errorMessage = "Agent cannot take tickets";
+      if (!agent.isActive) {
+        errorMessage = "Agent is not active";
+      } else if (!agent.isOnline) {
+        errorMessage = "Agent is offline";
+      }
+      return res.status(400).json({
+        error: errorMessage,
+        agentId: agent._id,
+        currentTickets: agent.currentTickets.length,
+        maxTickets: agent.maxConcurrentTickets,
+        isActive: agent.isActive,
+        isOnline: agent.isOnline,
+      });
     }
 
     await ticket.assign(agentId);
@@ -210,7 +251,29 @@ router.post("/:id/resolve", authenticate, async (req, res) => {
       return res.status(400).json({ error: "Resolution is required" });
     }
 
-    const ticket = await Ticket.findById(req.params.id);
+    // Validate ticket ID parameter
+    const ticketId = req.params.id;
+    if (
+      !ticketId ||
+      ticketId === "undefined" ||
+      ticketId === "null" ||
+      !mongoose.Types.ObjectId.isValid(ticketId)
+    ) {
+      return res.status(400).json({ error: "Valid ticket ID is required" });
+    }
+
+    // Validate agent exists and has valid ID
+    if (
+      !req.agent ||
+      !req.agent._id ||
+      !mongoose.Types.ObjectId.isValid(req.agent._id)
+    ) {
+      return res
+        .status(401)
+        .json({ error: "Valid agent authentication required" });
+    }
+
+    const ticket = await Ticket.findById(ticketId);
     if (!ticket) {
       return res.status(404).json({ error: "Ticket not found" });
     }
@@ -245,7 +308,29 @@ router.post("/:id/resolve", authenticate, async (req, res) => {
  */
 router.post("/:id/close", authenticate, async (req, res) => {
   try {
-    const ticket = await Ticket.findById(req.params.id);
+    // Validate ticket ID parameter
+    const ticketId = req.params.id;
+    if (
+      !ticketId ||
+      ticketId === "undefined" ||
+      ticketId === "null" ||
+      !mongoose.Types.ObjectId.isValid(ticketId)
+    ) {
+      return res.status(400).json({ error: "Valid ticket ID is required" });
+    }
+
+    // Validate agent exists and has valid ID
+    if (
+      !req.agent ||
+      !req.agent._id ||
+      !mongoose.Types.ObjectId.isValid(req.agent._id)
+    ) {
+      return res
+        .status(401)
+        .json({ error: "Valid agent authentication required" });
+    }
+
+    const ticket = await Ticket.findById(ticketId);
     if (!ticket) {
       return res.status(404).json({ error: "Ticket not found" });
     }

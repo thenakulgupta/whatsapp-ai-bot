@@ -1,5 +1,6 @@
 const express = require("express");
 const router = express.Router();
+const mongoose = require("mongoose");
 const { authenticate, authorizeModule } = require("../middleware/auth");
 const Chat = require("../db/models/Chat");
 const Ticket = require("../db/models/Ticket");
@@ -152,13 +153,35 @@ router.post("/:id/escalate", authenticate, async (req, res) => {
       return res.status(400).json({ error: "Escalation reason is required" });
     }
 
-    const chat = await Chat.findById(req.params.id);
+    // Validate chat ID parameter
+    const chatId = req.params.id;
+    if (
+      !chatId ||
+      chatId === "undefined" ||
+      chatId === "null" ||
+      !mongoose.Types.ObjectId.isValid(chatId)
+    ) {
+      return res.status(400).json({ error: "Valid chat ID is required" });
+    }
+
+    const chat = await Chat.findById(chatId);
     if (!chat) {
       return res.status(404).json({ error: "Chat not found" });
     }
 
     if (chat.isEscalated) {
       return res.status(400).json({ error: "Chat is already escalated" });
+    }
+
+    // Validate agent exists and has valid ID
+    if (
+      !req.agent ||
+      !req.agent._id ||
+      !mongoose.Types.ObjectId.isValid(req.agent._id)
+    ) {
+      return res
+        .status(401)
+        .json({ error: "Valid agent authentication required" });
     }
 
     // Create ticket

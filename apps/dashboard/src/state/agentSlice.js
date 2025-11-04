@@ -283,8 +283,8 @@ export const selectAvailableAgents = (state) =>
   state.agents.agents.filter(
     (agent) =>
       agent.isOnline &&
-      agent.isActive &&
-      agent.currentTickets.length < agent.maxConcurrentTickets
+      agent.isActive
+      // Allow agents to handle multiple people in parallel - no strict limit
   );
 
 export default agentSlice.reducer;
