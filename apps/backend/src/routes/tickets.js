@@ -220,6 +220,13 @@ router.post("/:id/start", authenticate, async (req, res) => {
       return res.status(404).json({ error: "Ticket not found" });
     }
 
+    // Check if ticket is assigned before checking authorization
+    if (!ticket.assignedTo) {
+      return res
+        .status(400)
+        .json({ error: "Ticket must be assigned before it can be started" });
+    }
+
     if (ticket.assignedTo.toString() !== req.agent._id.toString()) {
       return res
         .status(403)
@@ -276,6 +283,13 @@ router.post("/:id/resolve", authenticate, async (req, res) => {
     const ticket = await Ticket.findById(ticketId);
     if (!ticket) {
       return res.status(404).json({ error: "Ticket not found" });
+    }
+
+    // Check if ticket is assigned before checking authorization
+    if (!ticket.assignedTo) {
+      return res
+        .status(400)
+        .json({ error: "Ticket must be assigned before it can be resolved" });
     }
 
     if (ticket.assignedTo.toString() !== req.agent._id.toString()) {
@@ -335,7 +349,9 @@ router.post("/:id/close", authenticate, async (req, res) => {
       return res.status(404).json({ error: "Ticket not found" });
     }
 
+    // Check authorization: allow if admin, or if ticket is assigned to the agent, or if ticket is unassigned
     if (
+      ticket.assignedTo &&
       ticket.assignedTo.toString() !== req.agent._id.toString() &&
       req.agent.role !== "admin"
     ) {
@@ -620,6 +636,24 @@ router.post("/:id/messages", authenticate, async (req, res) => {
     const ticket = await Ticket.findById(req.params.id);
     if (!ticket) {
       return res.status(404).json({ error: "Ticket not found" });
+    }
+
+    // Check if ticket is assigned - agents can only message if ticket is assigned
+    if (!ticket.assignedTo) {
+      return res.status(403).json({
+        error:
+          "Ticket must be assigned before you can send messages. Please assign the ticket first.",
+      });
+    }
+
+    // Check if ticket is assigned to this agent (or if agent is admin)
+    if (
+      ticket.assignedTo.toString() !== req.agent._id.toString() &&
+      req.agent.role !== "admin"
+    ) {
+      return res.status(403).json({
+        error: "You can only send messages to tickets assigned to you",
+      });
     }
 
     // Create chat record for agent message

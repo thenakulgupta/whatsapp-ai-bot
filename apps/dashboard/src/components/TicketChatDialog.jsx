@@ -20,6 +20,10 @@ import {
   Person as PersonIcon,
   SmartToy as BotIcon,
   SupportAgent as AgentIcon,
+  CheckCircle as CheckCircleIcon,
+  Done as DoneIcon,
+  DoneAll as DoneAllIcon,
+  Error as ErrorIcon,
 } from "@mui/icons-material";
 import { formatDistanceToNow } from "date-fns";
 import api, { endpoints } from "../services/api";
@@ -31,7 +35,13 @@ function TicketChatDialog({ open, onClose, ticket }) {
   const [newMessage, setNewMessage] = useState("");
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
+  const [closingTicket, setClosingTicket] = useState(false);
+  const [assigning, setAssigning] = useState(false);
   const messagesEndRef = useRef(null);
+
+  // Check if ticket is assigned
+  const isAssigned = ticket?.assignedTo != null;
+  const canSendMessage = isAssigned;
 
   const handleNewMessage = useCallback(
     (data) => {
@@ -91,7 +101,7 @@ function TicketChatDialog({ open, onClose, ticket }) {
   };
 
   const handleSendMessage = async () => {
-    if (!newMessage.trim() || sending) return;
+    if (!newMessage.trim() || sending || !canSendMessage) return;
 
     setSending(true);
     try {
@@ -113,10 +123,74 @@ function TicketChatDialog({ open, onClose, ticket }) {
     }
   };
 
+  const handleAssignToMe = async () => {
+    if (!ticket) return;
+
+    setAssigning(true);
+    try {
+      const ticketId = ticket._id || ticket.id;
+      // Get current user/agent ID from localStorage or auth state
+      const authToken = localStorage.getItem("authToken");
+      if (!authToken) {
+        toast.error("Not authenticated");
+        setAssigning(false);
+        return;
+      }
+
+      // You'll need to get the agent ID - assuming it's stored or from verify endpoint
+      const verifyResponse = await api.get(endpoints.verify);
+      const agentId =
+        verifyResponse.data.agent?._id || verifyResponse.data.agent?.id;
+
+      if (!agentId) {
+        toast.error("Could not get agent ID");
+        setAssigning(false);
+        return;
+      }
+
+      await api.post(endpoints.assignTicket(ticketId), {
+        agentId: agentId,
+      });
+
+      toast.success("Ticket assigned to you! Refreshing...");
+
+      // Close dialog first
+      onClose();
+
+      // Then reload to refresh ticket data
+      setTimeout(() => {
+        window.location.reload();
+      }, 500);
+    } catch (error) {
+      console.error("Failed to assign ticket:", error);
+      toast.error(error.response?.data?.error || "Failed to assign ticket");
+    } finally {
+      setAssigning(false);
+    }
+  };
+
   const handleKeyPress = (e) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSendMessage();
+    }
+  };
+
+  const handleCloseTicket = async () => {
+    if (!ticket) return;
+
+    setClosingTicket(true);
+    try {
+      const ticketId = ticket._id || ticket.id;
+      await api.post(endpoints.ticket(ticketId) + "/close");
+
+      toast.success("Ticket closed - AI responses will resume");
+      onClose(); // Close the dialog
+    } catch (error) {
+      console.error("Failed to close ticket:", error);
+      toast.error("Failed to close ticket");
+    } finally {
+      setClosingTicket(false);
     }
   };
 
@@ -182,17 +256,39 @@ function TicketChatDialog({ open, onClose, ticket }) {
           alignItems: "center",
           borderBottom: 1,
           borderColor: "divider",
+          pb: 2,
         }}
       >
-        <Box>
-          <Typography variant="h6">{ticket.title}</Typography>
-          <Typography variant="caption" color="text.secondary">
-            {ticket.userPhone}
-          </Typography>
+        <Box sx={{ flex: 1 }}>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 0.5 }}>
+            <Avatar sx={{ bgcolor: "primary.main", width: 32, height: 32 }}>
+              <PersonIcon fontSize="small" />
+            </Avatar>
+            <Box>
+              <Typography variant="h6" sx={{ lineHeight: 1.2 }}>
+                {ticket.userPhone}
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                {ticket.title}
+              </Typography>
+            </Box>
+          </Box>
         </Box>
-        <IconButton onClick={onClose} size="small">
-          <CloseIcon />
-        </IconButton>
+        <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
+          <Button
+            variant="outlined"
+            size="small"
+            color="success"
+            startIcon={<CheckCircleIcon />}
+            onClick={handleCloseTicket}
+            disabled={closingTicket || ticket.status === "closed"}
+          >
+            {closingTicket ? "Closing..." : "Close Ticket"}
+          </Button>
+          <IconButton onClick={onClose} size="small">
+            <CloseIcon />
+          </IconButton>
+        </Box>
       </DialogTitle>
 
       <DialogContent
@@ -282,17 +378,57 @@ function TicketChatDialog({ open, onClose, ticket }) {
                     >
                       {message.message}
                     </Typography>
-                    <Typography
-                      variant="caption"
-                      color={
-                        isAgent ? "primary.contrastText" : "text.secondary"
-                      }
-                      sx={{ mt: 0.5, display: "block", opacity: 0.7 }}
+                    <Box
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 0.5,
+                        mt: 0.5,
+                      }}
                     >
-                      {formatDistanceToNow(new Date(message.createdAt), {
-                        addSuffix: true,
-                      })}
-                    </Typography>
+                      <Typography
+                        variant="caption"
+                        color={
+                          isAgent ? "primary.contrastText" : "text.secondary"
+                        }
+                        sx={{ opacity: 0.7 }}
+                      >
+                        {formatDistanceToNow(new Date(message.createdAt), {
+                          addSuffix: true,
+                        })}
+                      </Typography>
+                      {isAgent && (
+                        <Box sx={{ display: "flex", alignItems: "center" }}>
+                          {message.status === "completed" ? (
+                            <DoneAllIcon
+                              sx={{
+                                fontSize: 14,
+                                color: "primary.contrastText",
+                                opacity: 0.7,
+                              }}
+                              titleAccess="Sent"
+                            />
+                          ) : message.status === "failed" ? (
+                            <ErrorIcon
+                              sx={{
+                                fontSize: 14,
+                                color: "error.light",
+                              }}
+                              titleAccess="Failed to send"
+                            />
+                          ) : (
+                            <DoneIcon
+                              sx={{
+                                fontSize: 14,
+                                color: "primary.contrastText",
+                                opacity: 0.7,
+                              }}
+                              titleAccess="Sending..."
+                            />
+                          )}
+                        </Box>
+                      )}
+                    </Box>
                   </Paper>
                 </Box>
               );
@@ -303,6 +439,31 @@ function TicketChatDialog({ open, onClose, ticket }) {
       </DialogContent>
 
       <Divider />
+
+      {!isAssigned && (
+        <Box
+          sx={{
+            p: 2,
+            backgroundColor: "warning.light",
+            borderTop: 1,
+            borderColor: "divider",
+          }}
+        >
+          <Typography variant="body2" sx={{ mb: 1 }}>
+            ⚠️ You must assign this ticket to yourself before you can send
+            messages.
+          </Typography>
+          <Button
+            variant="contained"
+            color="primary"
+            size="small"
+            onClick={handleAssignToMe}
+            disabled={assigning}
+          >
+            {assigning ? "Assigning..." : "Assign to Me"}
+          </Button>
+        </Box>
+      )}
 
       <DialogActions
         sx={{
@@ -315,11 +476,15 @@ function TicketChatDialog({ open, onClose, ticket }) {
           fullWidth
           multiline
           maxRows={4}
-          placeholder="Type your message..."
+          placeholder={
+            isAssigned
+              ? "Type your message..."
+              : "Assign ticket to yourself to send messages"
+          }
           value={newMessage}
           onChange={(e) => setNewMessage(e.target.value)}
           onKeyPress={handleKeyPress}
-          disabled={sending}
+          disabled={sending || !canSendMessage}
           variant="outlined"
           size="small"
         />
@@ -327,7 +492,7 @@ function TicketChatDialog({ open, onClose, ticket }) {
           variant="contained"
           endIcon={sending ? <CircularProgress size={20} /> : <SendIcon />}
           onClick={handleSendMessage}
-          disabled={!newMessage.trim() || sending}
+          disabled={!newMessage.trim() || sending || !canSendMessage}
           sx={{ minWidth: 100 }}
         >
           Send
