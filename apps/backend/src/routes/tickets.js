@@ -163,6 +163,30 @@ router.post("/:id/assign", authenticate, async (req, res) => {
     await ticket.assign(agentId);
     await agent.assignTicket(ticket._id);
 
+    // Send WhatsApp message to user notifying them of agent assignment
+    try {
+      const whatsappService = require("../services/whatsapp");
+      const assignmentMessage = `Hello! 👋 Agent ${agent.name} has been assigned to help you with your request. They will be with you shortly.`;
+
+      await whatsappService.sendTextMessage(
+        ticket.userPhone,
+        assignmentMessage
+      );
+
+      logger.info("Assignment notification sent to user", {
+        ticketId: ticket._id,
+        agentId,
+        agentName: agent.name,
+        userPhone: ticket.userPhone,
+      });
+    } catch (whatsappError) {
+      logger.error("Failed to send assignment notification to user", {
+        error: whatsappError.message,
+        ticketId: ticket._id,
+      });
+      // Don't fail the assignment if notification fails
+    }
+
     logger.info("Ticket assigned", {
       ticketId: ticket._id,
       agentId,
