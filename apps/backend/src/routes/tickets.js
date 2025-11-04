@@ -386,6 +386,26 @@ router.post("/:id/close", authenticate, async (req, res) => {
 
     await ticket.close();
 
+    // Send WhatsApp message to user notifying them that chat has ended
+    try {
+      const whatsappService = require("../services/whatsapp");
+      const closureMessage = `Thank you for contacting us! 😊\n\nYour support ticket has been closed. If you need further assistance, feel free to reach out anytime. Our AI assistant is here to help!`;
+
+      await whatsappService.sendTextMessage(ticket.userPhone, closureMessage);
+
+      logger.info("Ticket closure notification sent to user", {
+        ticketId: ticket._id,
+        agentId: req.agent._id,
+        userPhone: ticket.userPhone,
+      });
+    } catch (whatsappError) {
+      logger.error("Failed to send ticket closure notification to user", {
+        error: whatsappError.message,
+        ticketId: ticket._id,
+      });
+      // Don't fail the closure if notification fails
+    }
+
     logger.info("Ticket closed", {
       ticketId: ticket._id,
       agentId: req.agent._id,
