@@ -462,9 +462,20 @@ class WebSocketHub {
    */
   emitToAll(event, data) {
     if (this.io) {
+      logger.info("Emitting WebSocket event to all clients", {
+        event,
+        dataKeys: Object.keys(data),
+        connectedClients: this.connectedClients.size,
+        connectedAgents: this.agentSockets.size,
+      });
+
       this.io.emit(event, {
         ...data,
         timestamp: new Date().toISOString(),
+      });
+    } else {
+      logger.warn("Cannot emit event - WebSocket not initialized", {
+        event,
       });
     }
   }

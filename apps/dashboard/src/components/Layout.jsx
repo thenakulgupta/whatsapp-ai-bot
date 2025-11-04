@@ -70,7 +70,7 @@ function Layout({ children }) {
     }
 
     // Setup WebSocket listeners
-    wsService.on("new_ticket", (data) => {
+    const handleNewTicketNotification = (data) => {
       setNotifications((prev) => [
         ...prev,
         {
@@ -80,9 +80,9 @@ function Layout({ children }) {
           timestamp: new Date(),
         },
       ]);
-    });
+    };
 
-    wsService.on("chat_escalated", (data) => {
+    const handleChatEscalatedNotification = (data) => {
       setNotifications((prev) => [
         ...prev,
         {
@@ -92,10 +92,15 @@ function Layout({ children }) {
           timestamp: new Date(),
         },
       ]);
-    });
+    };
+
+    wsService.on("new_ticket", handleNewTicketNotification);
+    wsService.on("chat_escalated", handleChatEscalatedNotification);
 
     return () => {
-      wsService.disconnect();
+      wsService.off("new_ticket", handleNewTicketNotification);
+      wsService.off("chat_escalated", handleChatEscalatedNotification);
+      // Don't disconnect - other components need the WebSocket
     };
   }, [dispatch, agent]);
 

@@ -404,6 +404,11 @@ Generate only the message text, nothing else.`;
       await chat.save();
 
       // Notify agents via WebSocket
+      logger.info("Emitting new_ticket WebSocket event", {
+        ticketId: ticket._id,
+        event: "new_ticket",
+      });
+
       wsHub.emitToAll("new_ticket", {
         ticketId: ticket._id,
         ticket: ticket,

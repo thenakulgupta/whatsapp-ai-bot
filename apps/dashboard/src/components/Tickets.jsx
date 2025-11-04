@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import {
   Box,
@@ -92,7 +92,49 @@ function Tickets() {
     console.log("🟣 selectedAgentId changed to:", selectedAgentId);
   }, [selectedAgentId]);
 
+  const fetchTicketsData = useCallback(() => {
+    console.log("🔄 Fetching tickets data...");
+    dispatch(
+      fetchTickets({
+        moduleId: selectedModule,
+        status: statusFilter || null,
+      })
+    );
+  }, [dispatch, selectedModule, statusFilter]);
+
+  const handleNewTicket = useCallback(
+    (data) => {
+      console.log("🔔 WebSocket: new_ticket event received in handler", data);
+      fetchTicketsData();
+      toast.success("New ticket received!");
+    },
+    [fetchTicketsData]
+  );
+
+  const handleTicketUpdate = useCallback(
+    (data) => {
+      console.log(
+        "🔔 WebSocket: ticket_updated event received in handler",
+        data
+      );
+      fetchTicketsData();
+    },
+    [fetchTicketsData]
+  );
+
+  const handleTicketAssigned = useCallback(
+    (data) => {
+      console.log(
+        "🔔 WebSocket: ticket_assigned event received in handler",
+        data
+      );
+      fetchTicketsData();
+    },
+    [fetchTicketsData]
+  );
+
   useEffect(() => {
+    console.log("🎯 Setting up WebSocket listeners...");
     fetchTicketsData();
     dispatch(fetchAgents());
 
@@ -101,12 +143,21 @@ function Tickets() {
     wsService.on("ticket_updated", handleTicketUpdate);
     wsService.on("ticket_assigned", handleTicketAssigned);
 
+    console.log("✅ WebSocket listeners registered");
+
     return () => {
+      console.log("🧹 Cleaning up WebSocket listeners...");
       wsService.off("new_ticket", handleNewTicket);
       wsService.off("ticket_updated", handleTicketUpdate);
       wsService.off("ticket_assigned", handleTicketAssigned);
     };
-  }, [selectedModule]);
+  }, [
+    dispatch,
+    handleNewTicket,
+    handleTicketUpdate,
+    handleTicketAssigned,
+    fetchTicketsData,
+  ]);
 
   // Show error notifications
   useEffect(() => {
@@ -116,30 +167,6 @@ function Tickets() {
       );
     }
   }, [error]);
-
-  const fetchTicketsData = () => {
-    dispatch(
-      fetchTickets({
-        moduleId: selectedModule,
-        status: statusFilter || null,
-      })
-    );
-  };
-
-  const handleNewTicket = (data) => {
-    // Auto-refresh tickets when a new ticket is created
-    fetchTicketsData();
-  };
-
-  const handleTicketUpdate = (data) => {
-    // Auto-refresh tickets when a ticket is updated
-    fetchTicketsData();
-  };
-
-  const handleTicketAssigned = (data) => {
-    // Auto-refresh tickets when a ticket is assigned
-    fetchTicketsData();
-  };
 
   const handleAssignClick = (ticket) => {
     console.log("🔵 handleAssignClick called with ticket:", ticket);

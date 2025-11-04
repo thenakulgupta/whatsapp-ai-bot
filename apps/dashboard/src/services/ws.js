@@ -100,22 +100,25 @@ class WebSocketService {
 
     this.socket.on("chat_escalated", (data) => {
       this.emit("chat_escalated", data);
-      toast.info(`Chat escalated: ${data.chatId}`);
+      toast(`Chat escalated: ${data.chatId}`, { icon: "📢" });
     });
 
     // Ticket updates
     this.socket.on("new_ticket", (data) => {
+      console.log("📥 WebSocket received: new_ticket", data);
       this.emit("new_ticket", data);
-      toast.info(`New ticket created: ${data.ticketId}`);
+      toast.success(`New ticket created!`);
     });
 
     this.socket.on("ticket_updated", (data) => {
+      console.log("📥 WebSocket received: ticket_updated", data);
       this.emit("ticket_updated", data);
     });
 
     this.socket.on("ticket_assigned", (data) => {
+      console.log("📥 WebSocket received: ticket_assigned", data);
       this.emit("ticket_assigned", data);
-      toast.info(`Ticket assigned: ${data.ticketId}`);
+      toast.success(`Ticket assigned!`);
     });
 
     // Agent updates
@@ -266,10 +269,20 @@ class WebSocketService {
    * Add event listener
    */
   on(event, callback) {
+    console.log(`📝 Registering listener for event: ${event}`, {
+      callbackName: callback.name || "anonymous",
+      existingListeners: this.listeners.get(event)?.size || 0,
+    });
+
     if (!this.listeners.has(event)) {
       this.listeners.set(event, new Set());
     }
     this.listeners.get(event).add(callback);
+
+    console.log(
+      `✅ Listener registered for ${event}. Total listeners:`,
+      this.listeners.get(event).size
+    );
   }
 
   /**
@@ -285,14 +298,39 @@ class WebSocketService {
    * Emit event to listeners
    */
   emit(event, data) {
+    console.log(`📢 Emitting event to listeners: ${event}`, {
+      hasListeners: this.listeners.has(event),
+      listenerCount: this.listeners.get(event)?.size || 0,
+    });
+
     if (this.listeners.has(event)) {
-      this.listeners.get(event).forEach((callback) => {
+      const listeners = this.listeners.get(event);
+      console.log(`🎯 Executing ${listeners.size} callback(s) for ${event}`);
+
+      let callbackIndex = 0;
+      listeners.forEach((callback) => {
         try {
-          callback(data);
+          console.log(`🔵 Calling callback #${callbackIndex} for ${event}`, {
+            callbackName: callback.name || "anonymous",
+            callbackType: typeof callback,
+          });
+          const result = callback(data);
+          console.log(
+            `✅ Callback #${callbackIndex} executed successfully, result:`,
+            result
+          );
+          callbackIndex++;
         } catch (error) {
-          console.error(`Error in event listener for ${event}:`, error);
+          console.error(
+            `❌ Error in callback #${callbackIndex} for ${event}:`,
+            error
+          );
+          console.error("Error stack:", error.stack);
+          callbackIndex++;
         }
       });
+    } else {
+      console.warn(`⚠️ No listeners registered for event: ${event}`);
     }
   }
 

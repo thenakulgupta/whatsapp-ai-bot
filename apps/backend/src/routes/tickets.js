@@ -187,6 +187,15 @@ router.post("/:id/assign", authenticate, async (req, res) => {
       // Don't fail the assignment if notification fails
     }
 
+    // Emit WebSocket event for real-time dashboard updates
+    const { wsHub } = require("../services/wsHub");
+    wsHub.emitToAll("ticket_assigned", {
+      ticketId: ticket._id,
+      agentId: agentId,
+      agentName: agent.name,
+      assignedAt: ticket.assignedAt,
+    });
+
     logger.info("Ticket assigned", {
       ticketId: ticket._id,
       agentId,
@@ -324,6 +333,15 @@ router.post("/:id/resolve", authenticate, async (req, res) => {
 
     await ticket.resolve(resolution);
 
+    // Emit WebSocket event for real-time dashboard updates
+    const { wsHub } = require("../services/wsHub");
+    wsHub.emitToAll("ticket_updated", {
+      ticketId: ticket._id,
+      status: "resolved",
+      resolvedAt: ticket.resolvedAt,
+      resolvedBy: req.agent._id,
+    });
+
     logger.info("Ticket resolved", {
       ticketId: ticket._id,
       agentId: req.agent._id,
@@ -405,6 +423,15 @@ router.post("/:id/close", authenticate, async (req, res) => {
       });
       // Don't fail the closure if notification fails
     }
+
+    // Emit WebSocket event for real-time dashboard updates
+    const { wsHub } = require("../services/wsHub");
+    wsHub.emitToAll("ticket_updated", {
+      ticketId: ticket._id,
+      status: "closed",
+      closedAt: ticket.closedAt,
+      closedBy: req.agent._id,
+    });
 
     logger.info("Ticket closed", {
       ticketId: ticket._id,
