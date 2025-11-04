@@ -201,6 +201,16 @@ class ModuleRegistry {
     message
   ) {
     try {
+      // Handle global escalation function
+      if (functionName.toLowerCase() === "escalate_to_human") {
+        return await this.handleEscalation(
+          moduleId,
+          parameters,
+          context,
+          message
+        );
+      }
+
       const module = this.getModule(moduleId);
       if (!module) {
         throw new Error(`Module ${moduleId} not found`);
@@ -327,6 +337,112 @@ Generate only the message text, nothing else.`;
   }
 
   /**
+   * Handle escalation to human agent
+   */
+  async handleEscalation(moduleId, parameters, context = {}, message) {
+    try {
+      const Ticket = require("../db/models/Ticket");
+      const Chat = require("../db/models/Chat");
+      const { wsHub } = require("../services/wsHub");
+
+      const { userPhone, reason } = parameters;
+      const phone = userPhone || context.userPhone;
+
+      if (!phone) {
+        throw new Error("User phone number is required for escalation");
+      }
+
+      // Check if ticket already exists
+      const existingTicket = await Ticket.findOne({
+        userPhone: phone,
+        moduleId: moduleId,
+        status: { $in: ["open", "assigned", "in_progress"] },
+      });
+
+      if (existingTicket) {
+        return {
+          success: true,
+          response:
+            "A support ticket has already been created. An agent will be with you shortly.",
+          functionName: "escalate_to_human",
+          ticketId: existingTicket._id,
+        };
+      }
+
+      // Create chat record for the escalation request
+      const chat = new Chat({
+        userPhone: phone,
+        moduleId: moduleId,
+        sessionId: context.sessionId || null,
+        message: message || reason || "User requested human support",
+        senderType: "user",
+        messageType: "text",
+        language: context.detectedLanguage || "en",
+        status: "completed",
+      });
+
+      await chat.save();
+
+      // Create new ticket
+      const ticket = new Ticket({
+        chatId: chat._id,
+        moduleId: moduleId,
+        userPhone: phone,
+        sessionId: context.sessionId || null,
+        title: `Human Support Request - ${phone}`,
+        description:
+          reason || message || "User requested to speak with a human agent",
+        priority: "medium",
+        category: "escalation",
+        status: "open",
+      });
+
+      await ticket.save();
+
+      // Link chat to ticket
+      chat.ticketId = ticket._id;
+      await chat.save();
+
+      // Notify agents via WebSocket
+      wsHub.emitToAll("new_ticket", {
+        ticketId: ticket._id,
+        ticket: ticket,
+      });
+
+      logger.info("Ticket created via AI escalation", {
+        ticketId: ticket._id,
+        userPhone: phone,
+        moduleId: moduleId,
+      });
+
+      return {
+        success: true,
+        response:
+          "I understand you'd like to speak with a human agent. I've created a support ticket and an agent will be with you shortly. Please wait for their response.",
+        functionName: "escalate_to_human",
+        ticketId: ticket._id,
+        result: {
+          ticketId: ticket._id,
+          status: "open",
+        },
+      };
+    } catch (error) {
+      logger.error("Failed to handle escalation", {
+        error: error.message,
+        moduleId,
+        parameters,
+      });
+
+      return {
+        success: false,
+        error: error.message,
+        response:
+          "I apologize, but I'm having trouble creating a support ticket right now. Please try again.",
+      };
+    }
+  }
+
+  /**
    * Get available functions for module
    */
   getModuleFunctions(moduleId) {
@@ -335,13 +451,53 @@ Generate only the message text, nothing else.`;
       return [];
     }
 
-    return module.manifest.functions || [];
+    // Always include the global escalation function
+    const escalationFunction = {
+      name: "escalate_to_human",
+      description:
+        "Escalate the conversation to a human agent when the user requests human help, wants to speak with a person, or needs assistance beyond AI capabilities",
+      parameters: {
+        type: "object",
+        properties: {
+          reason: {
+            type: "string",
+            description:
+              "The reason for escalation (what the user needs help with)",
+          },
+          userPhone: {
+            type: "string",
+            description: "User's phone number",
+          },
+        },
+        required: ["reason"],
+      },
+      examples: [
+        "User: I want to talk to a human",
+        "User: Can I speak with someone?",
+        "User: I need help from a real person",
+      ],
+    };
+
+    const moduleFunctions = module.manifest.functions || [];
+    return [escalationFunction, ...moduleFunctions];
   }
 
   /**
    * Validate module function
    */
   validateFunction(moduleId, functionName, parameters) {
+    // Handle global escalation function
+    if (functionName.toLowerCase() === "escalate_to_human") {
+      // Validate reason parameter
+      if (!parameters.reason) {
+        return {
+          valid: false,
+          error: "Missing required parameter: reason",
+        };
+      }
+      return { valid: true };
+    }
+
     const module = this.getModule(moduleId);
     if (!module) {
       return { valid: false, error: "Module not found" };
