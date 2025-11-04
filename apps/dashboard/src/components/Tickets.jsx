@@ -127,15 +127,18 @@ function Tickets() {
   };
 
   const handleNewTicket = (data) => {
-    // Ticket will be added to the list via Redux
+    // Auto-refresh tickets when a new ticket is created
+    fetchTicketsData();
   };
 
   const handleTicketUpdate = (data) => {
-    // Ticket will be updated via Redux
+    // Auto-refresh tickets when a ticket is updated
+    fetchTicketsData();
   };
 
   const handleTicketAssigned = (data) => {
-    // Ticket assignment will be handled via Redux
+    // Auto-refresh tickets when a ticket is assigned
+    fetchTicketsData();
   };
 
   const handleAssignClick = (ticket) => {
