@@ -11,9 +11,9 @@ env:
   MONGODB_DATABASE: whatsapp_ai_bot
   WHATSAPP_PHONE_NUMBER_ID: 105186499120173
   WHATSAPP_BUSINESS_ACCOUNT_ID: 105030139136328
-  DASHBOARD_URL: https://whatsapp-ai-bot.nakultelestock.com
+  DASHBOARD_URL: https://whatsapp-ai-bot.projects.stackmind.tech
   BACKEND_PORT: 3003
-  VITE_BACKEND_URL: https://whatsapp-ai-bot-backend.nakultelestock.com
+  VITE_BACKEND_URL: https://whatsapp-ai-bot-backend.projects.stackmind.tech
   NODE_ENV: development
   CURRENT_ENV: production
   ADMIN_USERNAME: admin
