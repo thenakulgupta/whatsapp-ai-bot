@@ -4,6 +4,11 @@ on:
   push:
     branches:
       - main
+  workflow_dispatch:
+    inputs:
+      environment:
+        required: true
+        default: production
 
 env:
   EC2_HOST: 13.204.41.230
@@ -27,11 +32,44 @@ env:
   GROQ_MODEL: llama-3.1-8b-instant
 
 jobs:
-  deploy:
+  prepare:
     runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+    steps:
+      - name: Convert secret to JSON matrix safely
+        id: set-matrix
+        run: |
+          IPS="${{ vars.ELASTIC_IPS }}"
+
+          # Convert comma-separated string into JSON array manually
+          JSON="["
+          FIRST=true
+          IFS=',' read -ra ADDR <<< "$IPS"
+          for ip in "${ADDR[@]}"; do
+            if [ "$FIRST" = true ]; then
+              FIRST=false
+            else
+              JSON+=","
+            fi
+            JSON+="\"$ip\""
+          done
+          JSON+="]"
+
+          echo "matrix=$JSON" >> "$GITHUB_OUTPUT"
+  deploy:
+    needs: prepare
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        host: ${{ fromJson(needs.prepare.outputs.matrix) }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
+
+      - name: Set current host
+        run: echo "EC2_HOST=${{ matrix.host }}" >> $GITHUB_ENV
 
       - name: make .env
         run: |
@@ -72,7 +110,7 @@ jobs:
       - name: Create SSH key file from GitHub secret
         run: |
           mkdir -p ~/.ssh
-          echo "${{secrets.SSH_SECRET}}" > ~/.ssh/id_rsa
+          echo "${{secrets.PRIVATE_KEY_EC2}}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
 
       - name: Zip the project
