@@ -34,7 +34,7 @@ module.exports = {
         "Search for laptops in electronics category",
       ],
       apiInfo: {
-        url: "https://whatsapp-ai-bot-backend.projects.stackmind.tech/demo-data/ecommerce/search",
+        url: "https://whatsapp-ai-bot-backend-projects.stackmind.tech/demo-data/ecommerce/search",
         method: "GET",
         headers: {
           "Content-Type": "application/json",
@@ -57,7 +57,7 @@ module.exports = {
         "Tell me about iPhone 15 Pro",
       ],
       apiInfo: {
-        url: "https://whatsapp-ai-bot-backend.projects.stackmind.tech/demo-data/ecommerce/get-product-details",
+        url: "https://whatsapp-ai-bot-backend-projects.stackmind.tech/demo-data/ecommerce/get-product-details",
         method: "GET",
         headers: {
           "Content-Type": "application/json",
@@ -79,7 +79,7 @@ module.exports = {
       required: ["order_id"],
       examples: ["Track my order #12345", "Where is my order ORD789?"],
       apiInfo: {
-        url: "https://whatsapp-ai-bot-backend.projects.stackmind.tech/demo-data/ecommerce/track-order",
+        url: "https://whatsapp-ai-bot-backend-projects.stackmind.tech/demo-data/ecommerce/track-order",
         method: "GET",
         headers: {
           "Content-Type": "application/json",
@@ -102,7 +102,7 @@ module.exports = {
         "Cancel order ORD789 because I changed my mind",
       ],
       apiInfo: {
-        url: "https://whatsapp-ai-bot-backend.projects.stackmind.tech/demo-data/ecommerce/cancel-order",
+        url: "https://whatsapp-ai-bot-backend-projects.stackmind.tech/demo-data/ecommerce/cancel-order",
         method: "GET",
         headers: {
           "Content-Type": "application/json",
@@ -130,7 +130,7 @@ module.exports = {
         "Initiate exchange for defective item",
       ],
       apiInfo: {
-        url: "https://whatsapp-ai-bot-backend.projects.stackmind.tech/demo-data/ecommerce/initiate-return",
+        url: "https://whatsapp-ai-bot-backend-projects.stackmind.tech/demo-data/ecommerce/initiate-return",
         method: "GET",
         headers: {
           "Content-Type": "application/json",
@@ -158,7 +158,7 @@ module.exports = {
       },
       examples: ["Show my order history", "Get my orders from last month"],
       apiInfo: {
-        url: "https://whatsapp-ai-bot-backend.projects.stackmind.tech/demo-data/ecommerce/get-order-history",
+        url: "https://whatsapp-ai-bot-backend-projects.stackmind.tech/demo-data/ecommerce/get-order-history",
         method: "GET",
         headers: {
           "Content-Type": "application/json",
@@ -186,7 +186,7 @@ module.exports = {
         "Add 2 units of product ABC123 to cart",
       ],
       apiInfo: {
-        url: "https://whatsapp-ai-bot-backend.projects.stackmind.tech/demo-data/ecommerce/add-to-cart",
+        url: "https://whatsapp-ai-bot-backend-projects.stackmind.tech/demo-data/ecommerce/add-to-cart",
         method: "GET",
         headers: {
           "Content-Type": "application/json",
@@ -203,7 +203,7 @@ module.exports = {
       description: "View items in shopping cart",
       examples: ["Show my cart", "What's in my shopping cart?"],
       apiInfo: {
-        url: "https://whatsapp-ai-bot-backend.projects.stackmind.tech/demo-data/ecommerce/get-cart",
+        url: "https://whatsapp-ai-bot-backend-projects.stackmind.tech/demo-data/ecommerce/get-cart",
         method: "GET",
         headers: {
           "Content-Type": "application/json",
@@ -226,7 +226,7 @@ module.exports = {
       required: ["coupon_code"],
       examples: ["Apply coupon SAVE20", "Use discount code WELCOME10"],
       apiInfo: {
-        url: "https://whatsapp-ai-bot-backend.projects.stackmind.tech/demo-data/ecommerce/apply-coupon",
+        url: "https://whatsapp-ai-bot-backend-projects.stackmind.tech/demo-data/ecommerce/apply-coupon",
         method: "GET",
         headers: {
           "Content-Type": "application/json",
@@ -251,7 +251,7 @@ module.exports = {
         "Is product ABC123 in stock?",
       ],
       apiInfo: {
-        url: "https://whatsapp-ai-bot-backend.projects.stackmind.tech/demo-data/ecommerce/check-availability",
+        url: "https://whatsapp-ai-bot-backend-projects.stackmind.tech/demo-data/ecommerce/check-availability",
         method: "GET",
         headers: {
           "Content-Type": "application/json",

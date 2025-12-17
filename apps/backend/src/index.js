@@ -37,8 +37,8 @@ const io = new Server(server, {
         `http://localhost:${process.env.FRONTEND_PORT}`,
         `https://localhost:${process.env.FRONTEND_PORT}`,
         // Add your production domain here
-        "https://whatsapp-ai-bot.projects.stackmind.tech",
-        "http://whatsapp-ai-bot.projects.stackmind.tech",
+        "https://whatsapp-ai-bot-projects.stackmind.tech",
+        "http://whatsapp-ai-bot-projects.stackmind.tech",
         process.env.DASHBOARD_URL,
       ].filter(Boolean);
 
@@ -80,8 +80,8 @@ app.use(
     origin: [
       process.env.DASHBOARD_URL,
       `http://localhost:${process.env.FRONTEND_PORT}`,
-      "https://whatsapp-ai-bot.projects.stackmind.tech",
-      "http://whatsapp-ai-bot.projects.stackmind.tech",
+      "https://whatsapp-ai-bot-projects.stackmind.tech",
+      "http://whatsapp-ai-bot-projects.stackmind.tech",
     ].filter(Boolean),
     credentials: true,
   })
