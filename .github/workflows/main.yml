@@ -4,14 +4,9 @@ on:
   push:
     branches:
       - main
-  workflow_dispatch:
-    inputs:
-      environment:
-        required: true
-        default: production
 
 env:
-  EC2_HOST: 13.204.41.230
+  EC2_HOST: 65.0.113.78
   EC2_USERNAME: ubuntu
   MONGODB_DATABASE: whatsapp_ai_bot
   WHATSAPP_PHONE_NUMBER_ID: 105186499120173
@@ -32,44 +27,11 @@ env:
   GROQ_MODEL: llama-3.1-8b-instant
 
 jobs:
-  prepare:
-    runs-on: ubuntu-latest
-    outputs:
-      matrix: ${{ steps.set-matrix.outputs.matrix }}
-    steps:
-      - name: Convert secret to JSON matrix safely
-        id: set-matrix
-        run: |
-          IPS="${{ vars.ELASTIC_IPS }}"
-
-          # Convert comma-separated string into JSON array manually
-          JSON="["
-          FIRST=true
-          IFS=',' read -ra ADDR <<< "$IPS"
-          for ip in "${ADDR[@]}"; do
-            if [ "$FIRST" = true ]; then
-              FIRST=false
-            else
-              JSON+=","
-            fi
-            JSON+="\"$ip\""
-          done
-          JSON+="]"
-
-          echo "matrix=$JSON" >> "$GITHUB_OUTPUT"
   deploy:
-    needs: prepare
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        host: ${{ fromJson(needs.prepare.outputs.matrix) }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
-
-      - name: Set current host
-        run: echo "EC2_HOST=${{ matrix.host }}" >> $GITHUB_ENV
 
       - name: make .env
         run: |
