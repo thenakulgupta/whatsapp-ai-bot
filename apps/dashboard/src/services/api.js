@@ -2,7 +2,7 @@ import axios from "axios";
 import toast from "react-hot-toast";
 // Create axios instance
 const api = axios.create({
-  baseURL: "https://whatsapp-ai-bot-backend-projects.nakulgupta.in/api",
+  baseURL: `${import.meta.env.VITE_BACKEND_URL}/api`,
   timeout: 10000,
   headers: {
     "Content-Type": "application/json",

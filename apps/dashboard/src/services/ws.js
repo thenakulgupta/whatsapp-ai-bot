@@ -45,7 +45,8 @@ class WebSocketService {
    */
   getWebSocketUrl() {
     // In development or HTTP, use the configured backend URL
-    const backendUrl = "https://whatsapp-ai-bot-backend-projects.nakulgupta.in/api"
+    const backendUrl =
+      import.meta.env.VITE_BACKEND_URL || "http://localhost:3001";
     return backendUrl;
   }
 

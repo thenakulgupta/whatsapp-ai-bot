@@ -37,6 +37,7 @@ jobs:
       - name: Build Docker Image
         run: |
           docker build \
+            --build-arg VITE_BACKEND_URL="${{ secrets.VITE_BACKEND_URL }}" \
             -t ${{ env.IMAGE_NAME }}:latest .
 
       #################################################
