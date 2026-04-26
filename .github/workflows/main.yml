@@ -1,4 +1,4 @@
-name: Deploy to EC2
+name: Deploy Docker App
 
 on:
   push:
@@ -6,103 +6,43 @@ on:
       - main
 
 env:
-  EC2_HOST: 65.0.113.78
-  EC2_USERNAME: ubuntu
-  MONGODB_DATABASE: whatsapp_ai_bot
-  WHATSAPP_PHONE_NUMBER_ID: 105186499120173
-  WHATSAPP_BUSINESS_ACCOUNT_ID: 105030139136328
-  DASHBOARD_URL: https://whatsapp-ai-bot-projects.stackmind.tech
-  BACKEND_PORT: 3003
-  VITE_BACKEND_URL: https://whatsapp-ai-bot-backend-projects.stackmind.tech
-  NODE_ENV: development
-  CURRENT_ENV: production
-  ADMIN_USERNAME: admin
-  ADMIN_PASSWORD: admin123
-  SESSION_EXPIRY_HOURS: 24
-  MAX_SESSION_CONTEXT_SIZE: 1000
-  RATE_LIMIT_WINDOW_MS: 900000
-  RATE_LIMIT_MAX_REQUESTS: 10000
-  LOG_LEVEL: info
-  LOG_FILE: logs/app.log
-  GROQ_MODEL: llama-3.1-8b-instant
+  IMAGE_NAME: registry.gitlab.com/nakul-gupta/whatsapp-ai-bot
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
+
     steps:
+      #################################################
+      # Checkout Code
+      #################################################
+
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: make .env
+      #################################################
+      # Login to GitLab Container Registry (GitHub Runner)
+      #################################################
+
+      - name: Login to GitLab Registry
         run: |
-          echo "MONGODB_URI=${{secrets.MONGODB_URI}}" >> .env
-          echo "MONGODB_DATABASE=${{env.MONGODB_DATABASE}}" >> .env
-          echo "WHATSAPP_ACCESS_TOKEN=${{secrets.WHATSAPP_ACCESS_TOKEN}}" >> .env
-          echo "WHATSAPP_PHONE_NUMBER_ID=${{env.WHATSAPP_PHONE_NUMBER_ID}}" >> .env
-          echo "WHATSAPP_WEBHOOK_VERIFY_TOKEN=${{secrets.WHATSAPP_WEBHOOK_VERIFY_TOKEN}}" >> .env
-          echo "WHATSAPP_BUSINESS_ACCOUNT_ID=${{env.WHATSAPP_BUSINESS_ACCOUNT_ID}}" >> .env
-          echo "GROQ_API_KEY=${{secrets.GROQ_API_KEY}}" >> .env
-          echo "GOOGLE_TRANSLATE_API_KEY=${{secrets.GOOGLE_TRANSLATE_API_KEY}}" >> .env
-          echo "DASHBOARD_URL=${{env.DASHBOARD_URL}}" >> .env
-          echo "BACKEND_PORT=${{env.BACKEND_PORT}}" >> .env
-          echo "VITE_BACKEND_URL=${{env.VITE_BACKEND_URL}}" >> .env
-          echo "NODE_ENV=${{env.NODE_ENV}}" >> .env
-          echo "CURRENT_ENV=${{env.CURRENT_ENV}}" >> .env
-          echo "JWT_SECRET=${{secrets.JWT_SECRET}}" >> .env
-          echo "ADMIN_USERNAME=${{env.ADMIN_USERNAME}}" >> .env
-          echo "ADMIN_PASSWORD=${{env.ADMIN_PASSWORD}}" >> .env
-          echo "SESSION_EXPIRY_HOURS=${{env.SESSION_EXPIRY_HOURS}}" >> .env
-          echo "MAX_SESSION_CONTEXT_SIZE=${{env.MAX_SESSION_CONTEXT_SIZE}}" >> .env
-          echo "RATE_LIMIT_WINDOW_MS=${{env.RATE_LIMIT_WINDOW_MS}}" >> .env
-          echo "RATE_LIMIT_MAX_REQUESTS=${{env.RATE_LIMIT_MAX_REQUESTS}}" >> .env
-          echo "LOG_LEVEL=${{env.LOG_LEVEL}}" >> .env
-          echo "LOG_FILE=${{env.LOG_FILE}}" >> .env
-          echo "GROQ_MODEL=${{env.GROQ_MODEL}}" >> .env
+          echo "${{ secrets.GITLAB_REGISTRY_PASSWORD }}" | docker login registry.gitlab.com \
+            -u "${{ secrets.GITLAB_REGISTRY_USERNAME }}" \
+            --password-stdin
 
-      - name: Install dependencies
+      #################################################
+      # Build Docker Image
+      #################################################
+
+      - name: Build Docker Image
         run: |
-          npm run install:all
-          npm run build:dashboard
-          cd apps
-          mkdir dashboard_backup
-          mv dashboard/dist/* dashboard_backup
-          rm -rf dashboard/*
-          mv dashboard_backup/* dashboard/
+          docker build \
+            -t ${{ env.IMAGE_NAME }}:latest .
 
-      - name: Create SSH key file from GitHub secret
+      #################################################
+      # Push Docker Image
+      #################################################
+
+      - name: Push Docker Image
         run: |
-          mkdir -p ~/.ssh
-          echo "${{secrets.PRIVATE_KEY_EC2}}" > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
-
-      - name: Zip the project
-        run: zip -r project.zip ./*
-
-      - name: Delete existing build files
-        run: |
-          ssh -i ~/.ssh/id_rsa -o "StrictHostKeyChecking=no" ${{ env.EC2_USERNAME }}@${{ env.EC2_HOST }} << 'ENDSSH'
-          cd ~/
-          sudo rm -rf whatsapp-ai-bot
-          sudo mkdir whatsapp-ai-bot
-          sudo chown ubuntu:ubuntu whatsapp-ai-bot
-          ENDSSH
-
-      - name: Copy build files to EC2 instance
-        run: sudo scp -i ~/.ssh/id_rsa  -o "StrictHostKeyChecking=no" -v -r .env project.zip ${{ env.EC2_USERNAME }}@${{ env.EC2_HOST }}:~/whatsapp-ai-bot
-
-      - name: SSH into EC2 and deploy
-        run: |
-          ssh -i ~/.ssh/id_rsa -o "StrictHostKeyChecking=no" ${{ env.EC2_USERNAME }}@${{ env.EC2_HOST }} << 'ENDSSH'
-          cd ~/whatsapp-ai-bot
-          unzip project.zip
-          rm -rf project.zip
-          pm2 delete whatsapp-ai-bot-backend
-          pm2 save
-          sudo rm -rf /var/www/whatsapp-ai-bot
-          sudo mkdir -p /var/www/whatsapp-ai-bot
-          sudo cp -r . /var/www/whatsapp-ai-bot
-          sudo chown ubuntu:ubuntu -R /var/www/whatsapp-ai-bot
-          pm2 start /var/www/whatsapp-ai-bot/ecosystem.config.cjs || pm2 restart whatsapp-ai-bot-backend
-          pm2 save
-          sudo rm -rf ~/whatsapp-ai-bot
-          ENDSSH
+          docker push ${{ env.IMAGE_NAME }}:latest
