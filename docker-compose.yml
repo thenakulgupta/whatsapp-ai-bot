@@ -6,8 +6,7 @@ services:
     image: registry.gitlab.com/nakul-gupta/whatsapp-ai-bot:latest
 
     ports:
-      - "3000:3000"
-      - "3001:3001"
+      - "3003:3003"
 
     env_file:
       - .env
@@ -16,6 +15,7 @@ services:
 
     volumes:
       - logs_data:/app/logs
+      - /var/www/whatsapp-ai-bot/apps/dashboard:/app/apps/dashboard
 
 volumes:
   logs_data:

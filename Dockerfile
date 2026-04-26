@@ -26,6 +26,6 @@ RUN npm run install:all && \
     rm -rf dashboard/* && \
     mv dashboard_backup/* dashboard/
 
-EXPOSE 3000 3001
+EXPOSE 3003
 
 CMD ["npm", "run", "start"]
