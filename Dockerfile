@@ -3,7 +3,8 @@ FROM node:23-slim
 
 WORKDIR /app
 
-RUN apk add --no-cache bash
+# install bash correctly for slim
+RUN apt-get update && apt-get install -y bash && rm -rf /var/lib/apt/lists/*
 
 # Copy package files first for cache optimization
 COPY package*.json ./
