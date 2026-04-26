@@ -16,6 +16,13 @@ services:
     volumes:
       - logs_data:/app/logs
       - /var/www/whatsapp-ai-bot/apps/dashboard:/app/apps/dashboard
+      - dashboard_sync:/app/apps/dashboard # This handles the auto-copy
 
 volumes:
   logs_data:
+  dashboard_sync:
+    driver: local
+    driver_opts:
+      type: none
+      device: /var/www/whatsapp-ai-bot/apps/dashboard
+      o: bind
