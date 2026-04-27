@@ -36,7 +36,7 @@ module.exports = {
         "Search for 1BHK apartments in Mumbai under 1Cr",
       ],
       apiInfo: {
-        url: "https://whatsapp-ai-bot-backend-projects.stackmind.tech/demo-data/real-estate/search-properties",
+        url: "https://whatsapp-ai-bot-backend-projects.nakulgupta.in/demo-data/real-estate/search-properties",
         method: "GET",
         headers: {
           "Content-Type": "application/json",
@@ -63,7 +63,7 @@ module.exports = {
         "Tell me about Green Valley Apartments",
       ],
       apiInfo: {
-        url: "https://whatsapp-ai-bot-backend-projects.stackmind.tech/demo-data/real-estate/get-property-details",
+        url: "https://whatsapp-ai-bot-backend-projects.nakulgupta.in/demo-data/real-estate/get-property-details",
         method: "GET",
         headers: {
           "Content-Type": "application/json",
@@ -99,7 +99,7 @@ module.exports = {
         "Book a virtual tour for tomorrow at 2 PM",
       ],
       apiInfo: {
-        url: "https://whatsapp-ai-bot-backend-projects.stackmind.tech/demo-data/real-estate/schedule-visit",
+        url: "https://whatsapp-ai-bot-backend-projects.nakulgupta.in/demo-data/real-estate/schedule-visit",
         method: "GET",
         headers: {
           "Content-Type": "application/json",
@@ -118,7 +118,7 @@ module.exports = {
       description: "Get all scheduled property visits",
       examples: ["Get all scheduled visits", "Show me my scheduled visits"],
       apiInfo: {
-        url: "https://whatsapp-ai-bot-backend-projects.stackmind.tech/demo-data/real-estate/get-scheduled-visits",
+        url: "https://whatsapp-ai-bot-backend-projects.nakulgupta.in/demo-data/real-estate/get-scheduled-visits",
         method: "GET",
       },
     },
@@ -136,7 +136,7 @@ module.exports = {
         "Cancel visit for property ABC123",
       ],
       apiInfo: {
-        url: "https://whatsapp-ai-bot-backend-projects.stackmind.tech/demo-data/real-estate/cancel-visit",
+        url: "https://whatsapp-ai-bot-backend-projects.nakulgupta.in/demo-data/real-estate/cancel-visit",
         method: "GET",
         headers: {
           "Content-Type": "application/json",
@@ -166,7 +166,7 @@ module.exports = {
         "Get loan estimate for 1Cr property for 20 years",
       ],
       apiInfo: {
-        url: "https://whatsapp-ai-bot-backend-projects.stackmind.tech/demo-data/real-estate/get-loan-estimate",
+        url: "https://whatsapp-ai-bot-backend-projects.nakulgupta.in/demo-data/real-estate/get-loan-estimate",
         method: "GET",
         headers: {
           "Content-Type": "application/json",
@@ -197,7 +197,7 @@ module.exports = {
         "What are the amenities in Gurgaon Sector 29?",
       ],
       apiInfo: {
-        url: "https://whatsapp-ai-bot-backend-projects.stackmind.tech/demo-data/real-estate/get-area-info",
+        url: "https://whatsapp-ai-bot-backend-projects.nakulgupta.in/demo-data/real-estate/get-area-info",
         method: "GET",
         headers: {
           "Content-Type": "application/json",
@@ -228,7 +228,7 @@ module.exports = {
         "Compare these 3 properties on price and amenities",
       ],
       apiInfo: {
-        url: "https://whatsapp-ai-bot-backend-projects.stackmind.tech/demo-data/real-estate/compare-properties",
+        url: "https://whatsapp-ai-bot-backend-projects.nakulgupta.in/demo-data/real-estate/compare-properties",
         method: "GET",
         headers: {
           "Content-Type": "application/json",
