@@ -2,6 +2,12 @@
 
 A modular WhatsApp AI chatbot system that supports multiple industry demos (Real Estate, E-commerce, Healthcare, HR, etc.) with session-based module switching and comprehensive admin dashboard.
 
+## 📸 Screenshots & Demo
+
+Full end-to-end walkthrough: **[screenshots/slideshow.mp4](screenshots/slideshow.mp4)**
+
+All assets live in the [`screenshots/`](screenshots/) folder (22 PNGs + 1 MP4).
+
 ## 🎯 Features
 
 - **Modular Demo System**: Switch between different industry modules (Real Estate, E-commerce, etc.)
@@ -24,8 +30,8 @@ User Message → WhatsApp Webhook → Session Manager → Module Router → AI P
 1. **Clone and Install**
 
    ```bash
-   git clone <repository>
-   cd universal-ai-support
+   git clone https://github.com/thenakulgupta/whatsapp-ai-bot.git
+   cd whatsapp-ai-bot
    npm run install:all
    ```
 
